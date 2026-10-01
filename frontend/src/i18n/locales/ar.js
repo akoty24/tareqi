@@ -1,7 +1,7 @@
 // Arabic (primary). Plural messages use "zero | one | many" with the count passed as {n}.
 export default {
   app: {
-    name: 'مشوار',
+    name: 'طريقي',
     tagline: 'وصّل مشوارك مع جيرانك. رحلات مشتركة بين أهل القرية.',
   },
   languages: { ar: 'العربية', en: 'English' },
@@ -52,6 +52,8 @@ export default {
   auth: {
     login: 'تسجيل الدخول',
     register: 'حساب جديد',
+    loginToBook: 'سجّل الدخول للحجز',
+    browseAsGuest: 'تصفّح الرحلات بدون حساب ←',
     createAccount: 'إنشاء الحساب',
     forgotPassword: 'نسيت كلمة المرور؟',
     resetPassword: 'تعيين كلمة مرور جديدة',
@@ -73,6 +75,7 @@ export default {
   },
   home: {
     greeting: 'أهلاً {name} 👋',
+    guestGreeting: 'أهلاً بيك في طريقي 👋',
     whereTo: 'رايح فين؟',
     from: 'من',
     to: 'إلى',
@@ -282,7 +285,7 @@ export default {
     channels: { email: 'البريد الإلكتروني', push: 'إشعارات الموبايل' },
     channelHints: {
       email: 'تأكيد ورفض وإلغاء الحجوزات والرحلات.',
-      push: 'تنبيه فوري على تطبيق مشوار للأندرويد.',
+      push: 'تنبيه فوري على تطبيق طريقي للأندرويد.',
     },
     resendVerification: 'إرسال رابط التفعيل',
     language: 'اللغة',

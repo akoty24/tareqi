@@ -45,7 +45,7 @@ export async function registerPush(router, { onReceived } = {}) {
 
   if (platform === 'android') {
     // Must match the channel_id sent by the backend (FcmClient).
-    await PushNotifications.createChannel({ id: 'mishwar_default', name: 'مشوار', importance: 4, sound: 'default', vibration: true })
+    await PushNotifications.createChannel({ id: 'mishwar_default', name: 'طريقي', importance: 4, sound: 'default', vibration: true })
   }
 
   await PushNotifications.removeAllListeners()

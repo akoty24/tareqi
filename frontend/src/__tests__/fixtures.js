@@ -109,7 +109,7 @@ export const permissionGroups = [
 ]
 
 export const announcement = {
-  id: 1, title: 'أهلاً بيكم في مشوار', message: 'اعرض رحلتك أو اطلب مشوار.', link: '/search', audience: 'all', user_ids: [],
+  id: 1, title: 'أهلاً بيكم في طريقي', message: 'اعرض رحلتك أو اطلب مشوار.', link: '/search', audience: 'all', user_ids: [],
   send_email: false, recipients_count: 15, sender: publicUser, sent_at: '2026-09-30T09:00:00+03:00', created_at: '2026-09-30T09:00:00+03:00',
 }
 

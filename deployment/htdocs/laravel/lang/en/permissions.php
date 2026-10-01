@@ -1,0 +1,37 @@
+<?php
+
+return [
+    'groups' => [
+        'dashboard' => 'Dashboard',
+        'users' => 'Users',
+        'roles' => 'Roles & permissions',
+        'trips' => 'Trips',
+        'bookings' => 'Bookings',
+        'trip_requests' => 'Trip requests',
+        'vehicles' => 'Vehicles',
+        'ratings' => 'Ratings',
+        'reports' => 'Reports',
+        'notifications' => 'Notifications',
+        'activity' => 'Activity log',
+    ],
+
+    'dashboard_view' => 'View statistics',
+    'users_view' => 'View users and their details',
+    'users_update' => 'Edit user details',
+    'users_block' => 'Block / unblock accounts and log them out',
+    'roles_manage' => 'Manage roles and assign them',
+    'trips_view' => 'View all trips',
+    'trips_manage' => 'Cancel inappropriate trips',
+    'bookings_view' => 'View all bookings',
+    'bookings_manage' => 'Cancel bookings',
+    'trip_requests_view' => 'View trip requests',
+    'trip_requests_manage' => 'Close trip requests',
+    'vehicles_view' => 'View vehicles',
+    'vehicles_manage' => 'Delete inappropriate vehicles',
+    'ratings_view' => 'View ratings',
+    'ratings_manage' => 'Delete abusive ratings',
+    'reports_view' => 'View reports',
+    'reports_manage' => 'Review reports and change their status',
+    'notifications_send' => 'Send broadcast notifications',
+    'activity_view' => 'View the admin activity log',
+];

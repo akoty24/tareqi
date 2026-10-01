@@ -1,4 +1,4 @@
-# مشوار · Mishwar — Community Carpooling MVP
+# طريقي · Tareeqi — Community Carpooling MVP
 
 Mishwar connects people from the same village who are travelling in the same direction at about the same time. Someone driving their own car publishes a trip with free seats. Neighbours search, book a seat, or post a trip request and get notified when a matching trip appears.
 

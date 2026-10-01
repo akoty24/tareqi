@@ -24,9 +24,10 @@ function search() {
 
 onMounted(async () => {
   try {
+    // Guests see the open trips; "your next trip" needs an account.
     const [trips, bookings] = await Promise.all([
       tripsApi.browse({ per_page: 4 }),
-      bookingsApi.list({ status: 'confirmed', scope: 'upcoming', per_page: 1 }),
+      auth.isAuthenticated ? bookingsApi.list({ status: 'confirmed', scope: 'upcoming', per_page: 1 }) : { data: [] },
     ])
     upcoming.value = trips.data
     nextBooking.value = bookings.data[0] ?? null
@@ -40,7 +41,7 @@ onMounted(async () => {
   <div class="space-y-6">
     <!-- 1. Where are you going? -->
     <section class="card bg-gradient-to-br from-brand-700 to-brand-900 !ring-0 text-white" aria-labelledby="where-title">
-      <p class="text-brand-100">{{ $t('home.greeting', { name: auth.user?.name?.split(' ')[0] }) }}</p>
+      <p class="text-brand-100">{{ auth.isAuthenticated ? $t('home.greeting', { name: auth.user?.name?.split(' ')[0] }) : $t('home.guestGreeting') }}</p>
       <h1 id="where-title" class="mb-4 text-3xl font-extrabold">{{ $t('home.whereTo') }}</h1>
 
       <form class="grid gap-3 rounded-2xl bg-white p-4 text-slate-800 sm:grid-cols-[1fr_auto_1fr_auto_auto] sm:items-end" @submit.prevent="search">

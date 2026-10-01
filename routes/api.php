@@ -31,6 +31,21 @@ Route::prefix('auth')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| Public browsing: guests can see the home page, search and open trips and
+| profiles; a token, when sent, personalises the answer.
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth.optional', 'active'])->group(function () {
+    // search/places are declared before {trip} so they are not captured by it
+    Route::get('trips/search', [TripController::class, 'search']);
+    Route::get('places', [TripController::class, 'places']);
+    Route::get('trips', [TripController::class, 'index']);
+    Route::get('trips/{trip}', [TripController::class, 'show']);
+    Route::get('users/{user}', [UserController::class, 'show'])->whereNumber('user');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Authenticated endpoints (blocked users are rejected by `active`)
 | Admin routes: `access-admin` = has a staff role, then one permission per
 | route (`can:users.view`); finer rules live in the policies.
@@ -50,17 +65,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('profile/password', [ProfileController::class, 'updatePassword']);
         Route::post('profile/photo', [ProfileController::class, 'updatePhoto']);
         Route::put('profile/notification-settings', [ProfileController::class, 'updateNotificationSettings']);
-        Route::get('users/{user}', [UserController::class, 'show'])->whereNumber('user');
 
         // Vehicles
         Route::apiResource('vehicles', VehicleController::class)->except('show');
 
-        // Trips (search/places are declared before {trip} so they are not captured by it)
-        Route::get('trips/search', [TripController::class, 'search']);
-        Route::get('places', [TripController::class, 'places']);
-        Route::get('trips', [TripController::class, 'index']);
+        // Trips (reads are public, above)
         Route::post('trips', [TripController::class, 'store'])->middleware('throttle:trips');
-        Route::get('trips/{trip}', [TripController::class, 'show']);
         Route::put('trips/{trip}', [TripController::class, 'update']);
         Route::delete('trips/{trip}', [TripController::class, 'destroy']);
         Route::patch('trips/{trip}/publish', [TripController::class, 'publish']);

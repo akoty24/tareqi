@@ -18,7 +18,7 @@ class AdminActivitySeeder extends Seeder
         $blocked = User::where('email', 'blocked@mishwar.test')->firstOrFail();
 
         $announcement = new Announcement([
-            'title' => 'أهلاً بيكم في مشوار',
+            'title' => 'أهلاً بيكم في طريقي',
             'message' => 'اعرض رحلتك أو اطلب مشوار، وخلّي جيرانك يشاركوك الطريق. خلي بالك من مواعيدك واحترم شركاء الرحلة.',
             'link' => '/search',
             'audience' => AnnouncementAudience::All,

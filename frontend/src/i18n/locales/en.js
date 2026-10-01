@@ -1,6 +1,6 @@
 // English. Missing keys fall back to Arabic.
 export default {
-  app: { name: 'Mishwar', tagline: 'Share the road with your neighbours. Community rides for your village.' },
+  app: { name: 'Tareeqi', tagline: 'Share the road with your neighbours. Community rides for your village.' },
   languages: { ar: 'العربية', en: 'English' },
   nav: {
     home: 'Home', search: 'Search', myTrips: 'My trips', myBookings: 'My bookings', requests: 'Trip requests',
@@ -16,7 +16,7 @@ export default {
   },
   errors: { generic: 'Something went wrong. Please try again.', network: 'Cannot reach the server. Check your connection.' },
   auth: {
-    login: 'Log in', register: 'Sign up', createAccount: 'Create account', forgotPassword: 'Forgot password?',
+    login: 'Log in', register: 'Sign up', loginToBook: 'Log in to book', browseAsGuest: 'Browse trips without an account →', createAccount: 'Create account', forgotPassword: 'Forgot password?',
     resetPassword: 'Set a new password', emailOrPhone: 'Email or mobile number', password: 'Password',
     newPassword: 'New password', passwordConfirm: 'Confirm password', passwordHint: 'At least 8 characters with letters and numbers',
     name: 'Name', phone: 'Mobile number', phoneHint: 'e.g. 01012345678', email: 'Email',
@@ -25,7 +25,7 @@ export default {
     sendResetLink: 'Send link', backToLogin: 'Back to log in',
   },
   home: {
-    greeting: 'Hi {name} 👋', whereTo: 'Where are you going?', from: 'From', to: 'To',
+    greeting: 'Hi {name} 👋', guestGreeting: 'Welcome to Tareeqi 👋', whereTo: 'Where are you going?', from: 'From', to: 'To',
     fromPlaceholder: 'e.g. Mit Khaqan', toPlaceholder: 'e.g. Shebin El Kom', swap: 'Swap origin and destination',
     date: 'Date', searchBtn: 'Find a trip', nextTrip: 'Your next trip', haveCar: 'Travelling with your car?',
     haveCarHint: 'Empty seats? Add your trip and share the road and the cost.', addTrip: 'Add a trip',
@@ -110,7 +110,7 @@ export default {
     language: 'Language',
     notifications: 'Notification settings', notificationsHint: 'In-app notifications are always on. Choose the extra channels.',
     channels: { email: 'Email', push: 'Mobile notifications' },
-    channelHints: { email: 'Booking and trip confirmations, rejections and cancellations.', push: 'Instant alerts on the Mishwar Android app.' },
+    channelHints: { email: 'Booking and trip confirmations, rejections and cancellations.', push: 'Instant alerts on the Tareeqi Android app.' },
   },
   vehicle: {
     add: 'Add vehicle', edit: 'Edit vehicle', type: 'Vehicle type', model: 'Make and model', modelPlaceholder: 'e.g. Hyundai Elantra 2019',

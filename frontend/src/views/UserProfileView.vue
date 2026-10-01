@@ -2,6 +2,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { profileApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
+import { useRequireLogin } from '@/composables/useRequireLogin'
 import { useToastStore } from '@/stores/toast'
 import { formatNumber, formatRating, formatShortDate } from '@/utils/format'
 import UserAvatar from '@/components/UserAvatar.vue'
@@ -12,6 +13,7 @@ import AppIcon from '@/components/AppIcon.vue'
 
 const props = defineProps({ id: { type: String, required: true } })
 const auth = useAuthStore()
+const requireLogin = useRequireLogin()
 const toast = useToastStore()
 const data = ref(null)
 const reportOpen = ref(false)
@@ -61,7 +63,7 @@ onMounted(load)
       <p v-else class="text-slate-500">{{ $t('rating.empty') }}</p>
     </section>
 
-    <button v-if="auth.user?.id !== data.user.id" type="button" class="w-full text-center text-sm text-slate-500 hover:text-red-600" @click="reportOpen = true">
+    <button v-if="auth.user?.id !== data.user.id" type="button" class="w-full text-center text-sm text-slate-500 hover:text-red-600" @click="requireLogin() && (reportOpen = true)">
       <AppIcon name="flag" class="inline size-4" /> {{ $t('report.reportUser') }}
     </button>
     <ReportDialog :open="reportOpen" :target="{ reported_user_id: data.user.id }" @close="reportOpen = false" />

@@ -1,6 +1,6 @@
 {
   "appId": "com.mishwar.app",
-  "appName": "مشوار",
+  "appName": "طريقي",
   "webDir": "dist",
   "server": {
     "androidScheme": "https",

@@ -16,6 +16,7 @@ use App\Services\Matching\MatchCriteria;
 use App\Services\Matching\TripMatchingService;
 use App\Services\TripService;
 use App\Support\PlaceName;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -40,6 +41,10 @@ class TripController extends Controller
         $user = $request->user();
 
         if ($request->boolean('mine')) {
+            if (! $user) {
+                throw new AuthenticationException;
+            }
+
             $query = $user->trips()
                 ->with(['vehicle', 'returnTrip', 'parentTrip'])
                 ->withCount(['bookings as pending_bookings_count' => fn ($q) => $q->where('status', BookingStatus::Pending)])
@@ -51,7 +56,7 @@ class TripController extends Controller
         } else {
             $query = Trip::query()
                 ->bookable()
-                ->where('owner_id', '!=', $user->id)
+                ->when($user, fn ($q) => $q->where('owner_id', '!=', $user->id))
                 ->with(['owner', 'vehicle'])
                 ->orderBy('departure_date')
                 ->orderBy('departure_time');
@@ -84,11 +89,12 @@ class TripController extends Controller
         $user = $request->user();
 
         $trip->load(['owner' => fn ($q) => $q->withCompletedTripCounts(), 'vehicle', 'returnTrip', 'parentTrip']);
-        $trip->setRelation('viewerBooking', $trip->bookings()
+        // Guests (no token) see the public view only.
+        $trip->setRelation('viewerBooking', $user ? $trip->bookings()
             ->where('passenger_id', $user->id)
             ->with('ratings')
             ->latest('id')
-            ->first());
+            ->first() : null);
 
         if ($trip->isOwnedBy($user)) {
             $trip->load(['bookings' => fn ($q) => $q->with(['passenger', 'ratings'])->latest('id')]);

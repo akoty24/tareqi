@@ -9,11 +9,17 @@ use App\Models\User;
 
 class TripPolicy
 {
-    /** Drafts and cancelled trips are only visible to the owner, past passengers and admins. */
-    public function view(User $user, Trip $trip): bool
+    /**
+     * Open trips are public (guests can browse before signing up). Drafts and
+     * cancelled trips are only visible to the owner, past passengers and staff.
+     */
+    public function view(?User $user, Trip $trip): bool
     {
         if (in_array($trip->status, TripStatus::visible(), true)) {
             return true;
+        }
+        if ($user === null) {
+            return false;
         }
 
         return $trip->isOwnedBy($user)

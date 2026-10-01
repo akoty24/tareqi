@@ -4,6 +4,8 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { tripsApi, bookingsApi } from '@/api'
 import { useToastStore } from '@/stores/toast'
+import { useAuthStore } from '@/stores/auth'
+import { useRequireLogin } from '@/composables/useRequireLogin'
 import { formatDate, formatTime, formatMoney, tripPriceLabel, formatNumber, formatRating, formatDateTime } from '@/utils/format'
 import AppIcon from '@/components/AppIcon.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
@@ -18,6 +20,8 @@ const props = defineProps({ id: { type: String, required: true } })
 const { t } = useI18n()
 const router = useRouter()
 const toast = useToastStore()
+const auth = useAuthStore()
+const requireLogin = useRequireLogin()
 
 const trip = ref(null)
 const loading = ref(true)
@@ -74,7 +78,7 @@ async function run(action, reload = true) {
   }
 }
 
-const book = () => run(() => bookingsApi.create(trip.value.id, { seats: seats.value, notes: notes.value || null }))
+const book = () => requireLogin() && run(() => bookingsApi.create(trip.value.id, { seats: seats.value, notes: notes.value || null }))
 
 function ask(kind, booking = null) {
   const configs = {
@@ -245,7 +249,7 @@ onMounted(load)
           </div>
           <p class="flex justify-between text-lg"><span>{{ $t('booking.total') }}</span><strong>{{ formatMoney(totalPrice) }}</strong></p>
           <p class="text-xs text-slate-500">{{ trip.auto_confirm_bookings ? $t('booking.instantHint') : $t('booking.approvalHint') }}</p>
-          <button type="submit" class="btn-primary w-full" :disabled="busy">{{ $t('booking.confirmBooking') }}</button>
+          <button type="submit" class="btn-primary w-full" :disabled="busy">{{ auth.isAuthenticated ? $t('booking.confirmBooking') : $t('auth.loginToBook') }}</button>
         </form>
       </section>
       <p v-else-if="!trip.is_mine && !myBooking && trip.status !== 'published'" class="card text-center text-slate-600">{{ $t('booking.notAvailable') }}</p>
@@ -264,7 +268,7 @@ onMounted(load)
         <button v-if="canEdit && !trip.bookings?.length" type="button" class="btn-ghost w-full text-red-600" @click="ask('deleteTrip')"><AppIcon name="trash" class="size-4" />{{ $t('common.delete') }}</button>
       </section>
 
-      <button v-if="!trip.is_mine" type="button" class="w-full text-center text-sm text-slate-500 hover:text-red-600" @click="reportOpen = true">
+      <button v-if="!trip.is_mine" type="button" class="w-full text-center text-sm text-slate-500 hover:text-red-600" @click="requireLogin() && (reportOpen = true)">
         <AppIcon name="flag" class="inline size-4" /> {{ $t('report.reportTrip') }}
       </button>
       <p class="text-center text-xs text-slate-400">{{ $t('trip.createdAt', { date: formatDateTime(trip.created_at) }) }}</p>

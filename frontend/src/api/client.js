@@ -43,7 +43,11 @@ const client = axios.create({
 
 client.interceptors.request.use((config) => {
   const token = tokenStorage.get()
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+    // Copy for shared hosts that strip "Authorization" (see deployment/htdocs/api.php).
+    config.headers['X-Authorization'] = `Bearer ${token}`
+  }
   config.headers['Accept-Language'] = i18n.global.locale.value
   return config
 })

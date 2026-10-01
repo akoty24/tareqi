@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import AppLogo from '@/components/AppLogo.vue'
@@ -40,7 +40,11 @@ function refreshUnread() {
 onMounted(() => {
   timer = setInterval(refreshUnread, POLL_MS)
   window.addEventListener('focus', refreshUnread)
-  registerPush(router, { onReceived: refreshUnread }).catch(() => {})
+  if (auth.isAuthenticated) registerPush(router, { onReceived: refreshUnread }).catch(() => {})
+})
+// Logged in from a guest page: register this device for push as well.
+watch(() => auth.isAuthenticated, (loggedIn) => {
+  if (loggedIn) registerPush(router, { onReceived: refreshUnread }).catch(() => {})
 })
 onUnmounted(() => {
   clearInterval(timer)
@@ -81,6 +85,11 @@ async function logout() {
             <AppIcon name="plus" class="size-4" /> {{ $t('nav.createTrip') }}
           </RouterLink>
 
+          <template v-if="!auth.isAuthenticated">
+            <RouterLink :to="{ name: 'login', query: { redirect: $route.fullPath } }" class="btn-ghost btn-sm">{{ $t('auth.login') }}</RouterLink>
+            <RouterLink :to="{ name: 'register' }" class="btn-secondary btn-sm">{{ $t('auth.register') }}</RouterLink>
+          </template>
+          <template v-else>
           <RouterLink
             :to="{ name: 'notifications' }"
             class="relative rounded-full p-2 text-slate-600 hover:bg-slate-100"
@@ -135,6 +144,7 @@ async function logout() {
               </button>
             </div>
           </div>
+          </template>
         </div>
       </div>
     </header>
