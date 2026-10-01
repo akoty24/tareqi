@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Cairo", ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: #f0fdfa;
+  --color-brand-100: #ccfbf1;
+  --color-brand-200: #99f6e4;
+  --color-brand-500: #14b8a6;
+  --color-brand-600: #0d9488;
+  --color-brand-700: #0f766e;
+  --color-brand-800: #115e59;
+  --color-brand-900: #134e4a;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased;
+  }
+  /* Visible keyboard focus everywhere (accessibility). */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-600;
+  }
+}
+
+/* Reusable component classes. Declared with @utility so they can be composed with @apply. */
+@utility card {
+  @apply rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 sm:p-5;
+}
+@utility btn {
+  @apply inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2 font-semibold transition disabled:cursor-not-allowed disabled:opacity-60;
+}
+@utility btn-primary {
+  @apply btn bg-brand-700 text-white hover:bg-brand-800;
+}
+@utility btn-secondary {
+  @apply btn bg-white text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50;
+}
+@utility btn-danger {
+  @apply btn bg-red-600 text-white hover:bg-red-700;
+}
+@utility btn-ghost {
+  @apply btn text-brand-700 hover:bg-brand-50;
+}
+@utility btn-sm {
+  @apply min-h-9 px-3 py-1 text-sm;
+}
+@utility label {
+  @apply mb-1 block text-sm font-semibold text-slate-700;
+}
+@utility input {
+  @apply block min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:ring-2 focus:ring-brand-200 focus:outline-none;
+}
+@utility input-error {
+  @apply border-red-500 focus:border-red-500 focus:ring-red-100;
+}
+@utility page-title {
+  @apply mb-4 text-2xl font-extrabold text-slate-900;
+}

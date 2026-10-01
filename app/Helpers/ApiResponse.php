@@ -130,20 +130,26 @@ class ApiResponse
      */
     public static function paginated(
         LengthAwarePaginator $paginator,
-        string $message = 'Data retrieved successfully'
+        string $message = 'Data retrieved successfully',
+        ?string $resourceClass = null,
+        array $extraMeta = []
     ): JsonResponse {
+        $items = $resourceClass
+            ? $resourceClass::collection($paginator->getCollection())->resolve()
+            : $paginator->items();
+
         return self::success(
-            $paginator->items(),
+            $items,
             $message,
             Response::HTTP_OK,
-            [
+            array_merge([
                 'current_page' => $paginator->currentPage(),
                 'last_page'    => $paginator->lastPage(),
                 'per_page'     => $paginator->perPage(),
                 'total'        => $paginator->total(),
                 'from'         => $paginator->firstItem(),
                 'to'           => $paginator->lastItem(),
-            ]
+            ], $extraMeta)
         );
     }
 }

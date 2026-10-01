@@ -6,17 +6,24 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('name', 100);
+            $table->string('phone', 20)->unique();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('profile_photo_path')->nullable();
+            // Values of App\Enums\UserRole / App\Enums\UserStatus.
+            $table->string('role', 20)->default('user');
+            $table->string('status', 20)->default('active')->index();
+            $table->timestamp('blocked_at')->nullable();
+            // Denormalized from `ratings` (kept in sync by RatingService) so trip
+            // listings can show the owner rating without an aggregate per row.
+            $table->decimal('rating_average', 3, 2)->default(0);
+            $table->unsignedInteger('ratings_count')->default(0);
             $table->rememberToken();
             $table->timestamps();
         });
@@ -37,9 +44,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('users');

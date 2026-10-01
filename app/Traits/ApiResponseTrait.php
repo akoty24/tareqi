@@ -99,8 +99,10 @@ trait ApiResponseTrait
      */
     protected function paginated(
         LengthAwarePaginator $paginator,
-        string $message = 'Data retrieved successfully'
+        string $message = 'Data retrieved successfully',
+        ?string $resourceClass = null,
+        array $extraMeta = []
     ): JsonResponse {
-        return ApiResponse::paginated($paginator, $message);
+        return ApiResponse::paginated($paginator, $message, $resourceClass, $extraMeta);
     }
 }

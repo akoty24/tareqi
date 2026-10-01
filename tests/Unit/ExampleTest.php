@@ -2,15 +2,15 @@
 
 namespace Tests\Unit;
 
+use App\Support\PlaceName;
 use PHPUnit\Framework\TestCase;
 
 class ExampleTest extends TestCase
 {
-    /**
-     * A basic test example.
-     */
-    public function test_that_true_is_true(): void
+    public function test_place_names_normalize_arabic_variants(): void
     {
-        $this->assertTrue(true);
+        $this->assertSame(PlaceName::normalize('الإسكندرية'), PlaceName::normalize('الاسكندريه'));
+        $this->assertSame(PlaceName::normalize('  ميت   أبو الكوم '), PlaceName::normalize('ميت ابو الكوم'));
+        $this->assertSame('cairo', PlaceName::normalize(' Cairo '));
     }
 }

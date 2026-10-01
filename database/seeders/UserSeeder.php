@@ -2,24 +2,41 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use Illuminate\Database\Seeder;
 
+/**
+ * Fixed demo accounts (documented in README) + random community members.
+ * All passwords are "password".
+ */
 class UserSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // create user
-        User::create([
-            'name' => 'Mohamed Saber',
-            'email' => 'm.saber@gmail.com',
-            'password' => Hash::make('123456789'),
-            'email_verified_at' => now(),
+        User::factory()->admin()->create([
+            'name' => 'مدير المنصة',
+            'email' => 'admin@mishwar.test',
+            'phone' => '01000000000',
         ]);
+
+        User::factory()->create([
+            'name' => 'أحمد محمود الشافعي',
+            'email' => 'driver@mishwar.test',
+            'phone' => '01000000001',
+        ]);
+
+        User::factory()->create([
+            'name' => 'سارة إبراهيم منصور',
+            'email' => 'passenger@mishwar.test',
+            'phone' => '01000000002',
+        ]);
+
+        User::factory()->blocked()->create([
+            'name' => 'حساب موقوف',
+            'email' => 'blocked@mishwar.test',
+            'phone' => '01000000003',
+        ]);
+
+        User::factory()->count(12)->create();
     }
 }

@@ -1,33 +1,28 @@
 <?php
+
 namespace App\Http\Requests\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Validation\Rules\Password;
+
 class RegisterRequest extends FormRequest
 {
-    public function authorize()
-    {
-        return true;
-    }
-
-    public function rules()
+    public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8',
+            'name' => ['required', 'string', 'min:3', 'max:100'],
+            // Egyptian mobile: 010 / 011 / 012 / 015 + 8 digits.
+            'phone' => ['required', 'string', 'regex:/^01[0125][0-9]{8}$/', 'unique:users,phone'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
         ];
     }
 
-    protected function failedValidation(Validator $validator)
+    protected function prepareForValidation(): void
     {
-        throw new HttpResponseException(
-            response()->json(
-                ['errors' => $validator->errors()],
-                Response::HTTP_UNPROCESSABLE_ENTITY
-            )
-        );
+        $this->merge([
+            'phone' => preg_replace('/\D/', '', (string) $this->input('phone')),
+            'email' => mb_strtolower(trim((string) $this->input('email'))),
+        ]);
     }
 }

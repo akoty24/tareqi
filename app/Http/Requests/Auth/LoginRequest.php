@@ -1,31 +1,25 @@
 <?php
+
 namespace App\Http\Requests\Auth;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Contracts\Validation\Validator;
-use Illuminate\Http\Exceptions\HttpResponseException;
-use Symfony\Component\HttpFoundation\Response;
+
 class LoginRequest extends FormRequest
 {
-    public function authorize()
-    {
-        return true;
-    }
-
-    public function rules()
+    public function rules(): array
     {
         return [
-            'email' => 'required|email',
-            'password' => 'required',
+            // Email address or mobile number.
+            'login' => ['required', 'string', 'max:255'],
+            'password' => ['required', 'string'],
         ];
     }
-     protected function failedValidation(Validator $validator)
+
+    protected function prepareForValidation(): void
     {
-        throw new HttpResponseException(
-            response()->json(
-                ['errors' => $validator->errors()],
-                Response::HTTP_UNPROCESSABLE_ENTITY
-            )
-        );
+        $login = trim((string) $this->input('login'));
+        $this->merge([
+            'login' => str_contains($login, '@') ? mb_strtolower($login) : preg_replace('/\D/', '', $login),
+        ]);
     }
 }
