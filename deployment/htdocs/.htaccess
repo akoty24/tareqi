@@ -2,10 +2,10 @@
     RewriteEngine On
 
     # Laravel API
-    RewriteCond %{REQUEST_URI} ^/api(/|$)
-    RewriteRule ^api(?:/(.*))?$ laravel/public/index.php [L,QSA]
+    RewriteCond %{REQUEST_URI} ^/api(?:/|$)
+    RewriteRule ^api(?:/(.*))?$ api.php [L,QSA]
 
-    # Do not rewrite Vite assets
+    # Vite assets
     RewriteCond %{REQUEST_URI} ^/assets/
     RewriteRule ^ - [L]
 
