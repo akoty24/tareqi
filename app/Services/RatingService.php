@@ -38,6 +38,15 @@ class RatingService
         }
     }
 
+    /** Staff moderation: remove an abusive rating and fix the rated user's average. */
+    public function delete(Rating $rating): void
+    {
+        DB::transaction(function () use ($rating) {
+            $rating->delete();
+            $this->recalculate($rating->rated_user_id);
+        });
+    }
+
     /** Re-sync the denormalized users.rating_average / ratings_count. */
     public function recalculate(int $userId): void
     {

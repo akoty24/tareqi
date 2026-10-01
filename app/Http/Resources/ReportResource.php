@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\Permission;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -10,7 +11,7 @@ class ReportResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $isAdmin = (bool) $request->user()?->isAdmin();
+        $isAdmin = (bool) $request->user()?->hasPermission(Permission::ReportsView);
 
         return [
             'id' => $this->id,

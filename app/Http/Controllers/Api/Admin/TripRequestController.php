@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Enums\TripRequestStatus;
+use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\TripRequestResource;
 use App\Models\TripRequest;
+use App\Services\ActivityLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -30,5 +32,22 @@ class TripRequestController extends Controller
             ->paginate($this->perPage(20));
 
         return $this->paginated($requests, __('messages.ok'), TripRequestResource::class);
+    }
+
+    /** Close a spam / inappropriate request (it stops matching new trips). */
+    public function cancel(TripRequest $tripRequest, ActivityLogger $activity): JsonResponse
+    {
+        $this->authorize('moderate', $tripRequest);
+        if ($tripRequest->status !== TripRequestStatus::Active) {
+            throw BusinessRuleException::make('trip_request_not_active');
+        }
+
+        $tripRequest->status = TripRequestStatus::Cancelled;
+        $tripRequest->save();
+        $activity->log('trip_request.cancelled', $tripRequest, [
+            'route' => "{$tripRequest->origin} ← {$tripRequest->destination}",
+        ]);
+
+        return $this->updated(new TripRequestResource($tripRequest->load('user')), __('messages.trip_request_cancelled'));
     }
 }

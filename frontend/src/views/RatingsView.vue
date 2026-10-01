@@ -3,7 +3,7 @@ import { onMounted, reactive } from 'vue'
 import { ratingsApi } from '@/api'
 import { usePaginated } from '@/composables/usePaginated'
 import { useAuthStore } from '@/stores/auth'
-import { formatShortDate, formatNumber } from '@/utils/format'
+import { formatShortDate, formatNumber, formatRating } from '@/utils/format'
 import StarRating from '@/components/StarRating.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import EmptyState from '@/components/EmptyState.vue'
@@ -22,7 +22,7 @@ onMounted(() => load(1))
     <h1 class="page-title">{{ $t('nav.ratings') }}</h1>
 
     <section class="card mb-4 flex items-center gap-4">
-      <span class="text-4xl font-extrabold text-amber-500">{{ formatNumber(auth.user?.rating_average) }}</span>
+      <span class="text-4xl font-extrabold text-amber-500">{{ formatRating(auth.user?.rating_average) }}</span>
       <div>
         <StarRating :model-value="auth.user?.rating_average || 0" readonly size="size-5" />
         <p class="text-sm text-slate-600">{{ $t('rating.basedOn', { n: formatNumber(auth.user?.ratings_count ?? 0) }) }}</p>

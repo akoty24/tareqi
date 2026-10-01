@@ -27,6 +27,15 @@ class SendBookingStatusNotifications
         $booking = $event->booking;
         $byPassenger = $event->actor !== null && $booking->isPassenger($event->actor);
 
+        // Cancelled by platform staff (neither passenger nor owner): tell both.
+        $byStaff = $event->actor !== null && ! $byPassenger && $event->actor->id !== $booking->trip->owner_id;
+        if ($byStaff) {
+            $booking->passenger->notify(new BookingCancelledNotification($booking, false, cancelledByAdmin: true));
+            $booking->trip->owner->notify(new BookingCancelledNotification($booking, false, cancelledByAdmin: true));
+
+            return;
+        }
+
         $recipient = $byPassenger ? $booking->trip->owner : $booking->passenger;
         $recipient->notify(new BookingCancelledNotification($booking, $byPassenger));
     }

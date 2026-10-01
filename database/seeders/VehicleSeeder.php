@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\User;
 use App\Models\Vehicle;
@@ -18,7 +17,7 @@ class VehicleSeeder extends Seeder
 
         // About half of the community members own a car.
         User::query()
-            ->where('role', UserRole::User)
+            ->members()
             ->where('status', UserStatus::Active)
             ->whereNotIn('email', ['driver@mishwar.test', 'passenger@mishwar.test'])
             ->inRandomOrder()

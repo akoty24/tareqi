@@ -3,7 +3,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { tripsApi, bookingsApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
-import { todayISO } from '@/utils/format'
+import { todayISO, formatDate, formatTime } from '@/utils/format'
 import PlaceInput from '@/components/PlaceInput.vue'
 import TripCard from '@/components/TripCard.vue'
 import AppIcon from '@/components/AppIcon.vue'
@@ -26,7 +26,7 @@ onMounted(async () => {
   try {
     const [trips, bookings] = await Promise.all([
       tripsApi.browse({ per_page: 4 }),
-      bookingsApi.list({ status: 'confirmed', per_page: 1 }),
+      bookingsApi.list({ status: 'confirmed', scope: 'upcoming', per_page: 1 }),
     ])
     upcoming.value = trips.data
     nextBooking.value = bookings.data[0] ?? null
@@ -63,13 +63,15 @@ onMounted(async () => {
     <RouterLink
       v-if="nextBooking"
       :to="{ name: 'trip', params: { id: nextBooking.trip_id } }"
-      class="card flex items-center gap-3 border-s-4 !border-emerald-500"
+      class="card flex items-center gap-3 border-s-4 !border-emerald-500 transition hover:shadow-md"
     >
-      <AppIcon name="ticket" class="size-8 text-emerald-600" />
-      <div>
+      <span class="rounded-full bg-emerald-50 p-2.5"><AppIcon name="ticket" class="size-7 text-emerald-600" /></span>
+      <div class="min-w-0 flex-1">
         <p class="text-sm text-slate-500">{{ $t('home.nextTrip') }}</p>
-        <p class="font-bold">{{ nextBooking.trip.origin }} ← {{ nextBooking.trip.destination }}</p>
+        <p class="truncate font-extrabold">{{ nextBooking.trip.origin }} ← {{ nextBooking.trip.destination }}</p>
+        <p class="text-sm text-slate-600">{{ formatDate(nextBooking.trip.departure_date) }} · {{ formatTime(nextBooking.trip.departure_time) }}</p>
       </div>
+      <AppIcon name="arrow" class="size-5 shrink-0 text-slate-400 ltr:rotate-180" />
     </RouterLink>
 
     <!-- 2 & 3: have a car / can't find a trip -->

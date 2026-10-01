@@ -7,9 +7,17 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:android": "vite build --mode android && cap sync android",
+    "android:open": "cap open android",
+    "android:apk": "npm run build:android && cd android && gradlew.bat assembleDebug",
+    "android:release": "npm run build:android && cd android && gradlew.bat assembleRelease"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/push-notifications": "^8.1.2",
     "axios": "^1.20.0",
     "pinia": "^4.0.3",
     "vue": "^3.5.43",
@@ -17,6 +25,7 @@
     "vue-router": "^5.3.1"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-vue": "^6.0.9",
     "@vue/test-utils": "^2.5.1",

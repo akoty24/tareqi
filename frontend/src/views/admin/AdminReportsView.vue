@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { adminApi } from '@/api'
+import { useAuthStore } from '@/stores/auth'
 import { usePaginated } from '@/composables/usePaginated'
 import { useForm } from '@/composables/useForm'
 import { formatDateTime } from '@/utils/format'
@@ -8,6 +9,7 @@ import AdminTable from '@/components/AdminTable.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import ModalDialog from '@/components/ModalDialog.vue'
 
+const auth = useAuthStore()
 const filters = reactive({ status: 'pending', reason: '' })
 const { items, meta, loading, load, page } = usePaginated((p) => adminApi.reports(p), filters)
 const reasons = ['unsafe_driving', 'harassment', 'no_show', 'fraud', 'inappropriate_content', 'other']
@@ -52,7 +54,7 @@ onMounted(() => load(1))
         <td class="max-w-xs truncate px-3 py-2" :title="r.description">{{ r.description || '—' }}</td>
         <td class="px-3 py-2"><StatusBadge kind="report" :status="r.status" /></td>
         <td class="px-3 py-2">{{ formatDateTime(r.created_at) }}</td>
-        <td class="px-3 py-2"><button type="button" class="btn-secondary btn-sm" @click="openReport(r)">{{ $t('admin.review') }}</button></td>
+        <td class="px-3 py-2"><button type="button" class="btn-secondary btn-sm" @click="openReport(r)">{{ auth.can('reports.manage') ? $t('admin.review') : $t('admin.view') }}</button></td>
       </tr>
     </AdminTable>
 
@@ -68,7 +70,7 @@ onMounted(() => load(1))
         <p v-if="selected.trip_id">
           <RouterLink :to="{ name: 'trip', params: { id: selected.trip_id } }" class="font-semibold text-brand-700 hover:underline">{{ $t('admin.viewTrip') }}</RouterLink>
         </p>
-        <form id="review-form" class="space-y-3 border-t border-slate-100 pt-3" @submit.prevent="saveReview">
+        <form v-if="auth.can('reports.manage')" id="review-form" class="space-y-3 border-t border-slate-100 pt-3" @submit.prevent="saveReview">
           <div>
             <label for="rv-status" class="label">{{ $t('common.status') }}</label>
             <select id="rv-status" v-model="review.fields.status" class="input">
@@ -81,10 +83,13 @@ onMounted(() => load(1))
           </div>
           <p class="text-xs text-slate-500">{{ $t('admin.blockHint') }}</p>
         </form>
+        <p v-if="selected.reported_user && auth.can('users.view')">
+          <RouterLink :to="{ name: 'admin-user', params: { id: selected.reported_user.id } }" class="font-semibold text-brand-700 hover:underline">{{ $t('admin.manageReportedUser') }}</RouterLink>
+        </p>
       </div>
       <template #actions>
         <button type="button" class="btn-secondary" @click="selected = null">{{ $t('common.cancel') }}</button>
-        <button type="submit" form="review-form" class="btn-primary" :disabled="review.submitting.value">{{ $t('common.save') }}</button>
+        <button v-if="auth.can('reports.manage')" type="submit" form="review-form" class="btn-primary" :disabled="review.submitting.value">{{ $t('common.save') }}</button>
       </template>
     </ModalDialog>
   </div>

@@ -17,7 +17,13 @@ import AppIcon from '@/components/AppIcon.vue'
 const { t } = useI18n()
 const toast = useToastStore()
 const route = useRoute()
-const filters = reactive({ role: 'passenger', status: String(route.query.status || '') })
+const status = String(route.query.status || '')
+// Upcoming trips first by default; finished bookings (e.g. "to rate" link) live under "past".
+const filters = reactive({
+  role: 'passenger',
+  scope: status === 'completed' ? 'past' : 'upcoming',
+  status,
+})
 const { items, meta, loading, load, page } = usePaginated((params) => bookingsApi.list(params), filters)
 const statuses = ['pending', 'confirmed', 'completed', 'cancelled', 'rejected']
 
@@ -61,6 +67,18 @@ onMounted(() => load(1))
           :class="filters.role === r ? 'bg-brand-700 text-white' : 'text-slate-600'"
           @click="filters.role = r"
         >{{ $t(`myBookings.${r}`) }}</button>
+      </div>
+      <div class="inline-flex rounded-xl bg-white p-1 ring-1 ring-slate-200" role="tablist" :aria-label="$t('myBookings.when')">
+        <button
+          v-for="s in ['upcoming', 'past']"
+          :key="s"
+          type="button"
+          role="tab"
+          :aria-selected="filters.scope === s"
+          class="rounded-lg px-4 py-1.5 text-sm font-semibold"
+          :class="filters.scope === s ? 'bg-slate-800 text-white' : 'text-slate-600'"
+          @click="filters.scope = s"
+        >{{ $t(`myTrips.${s}`) }}</button>
       </div>
       <label class="sr-only" for="mb-status">{{ $t('common.status') }}</label>
       <select id="mb-status" v-model="filters.status" class="input !w-auto !min-h-10 py-1">

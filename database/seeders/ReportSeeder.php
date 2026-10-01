@@ -38,7 +38,7 @@ class ReportSeeder extends Seeder
 
         Report::factory()->status(ReportStatus::UnderReview)->create([
             'reporter_id' => User::where('email', 'driver@mishwar.test')->value('id'),
-            'reported_user_id' => User::where('role', 'user')->where('email', 'not like', '%@mishwar.test')->value('id'),
+            'reported_user_id' => User::members()->where('email', 'not like', '%@mishwar.test')->value('id'),
             'reason' => ReportReason::NoShow,
         ]);
     }

@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateReportRequest;
 use App\Http\Resources\ReportResource;
 use App\Models\Report;
+use App\Services\ActivityLogger;
 use App\Services\ReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -42,7 +43,7 @@ class ReportController extends Controller
         return $this->success(new ReportResource($report), __('messages.ok'));
     }
 
-    public function update(UpdateReportRequest $request, Report $report, ReportService $reports): JsonResponse
+    public function update(UpdateReportRequest $request, Report $report, ReportService $reports, ActivityLogger $activity): JsonResponse
     {
         $this->authorize('update', $report);
 
@@ -52,6 +53,7 @@ class ReportController extends Controller
             ReportStatus::from($request->input('status')),
             $request->input('admin_notes'),
         );
+        $activity->log('report.reviewed', $report, ['status' => __('activity.report_status.'.$report->status->value)]);
 
         return $this->updated(new ReportResource($report->load(['reporter', 'reportedUser', 'reviewer'])), __('messages.report_updated'));
     }

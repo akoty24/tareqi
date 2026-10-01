@@ -53,9 +53,10 @@ onMounted(() => load(1))
     <h1 class="page-title">{{ $t('search.title') }}</h1>
 
     <form class="card mb-5 space-y-3" @submit.prevent="submit">
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <PlaceInput v-model="filters.origin" :label="$t('home.from')" :placeholder="$t('home.fromPlaceholder')" />
-        <PlaceInput v-model="filters.destination" :label="$t('home.to')" :placeholder="$t('home.toPlaceholder')" />
+      <!-- Mobile: places full width, date + passengers side by side. -->
+      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <PlaceInput v-model="filters.origin" class="col-span-2 sm:col-span-1" :label="$t('home.from')" :placeholder="$t('home.fromPlaceholder')" />
+        <PlaceInput v-model="filters.destination" class="col-span-2 sm:col-span-1" :label="$t('home.to')" :placeholder="$t('home.toPlaceholder')" />
         <div>
           <label for="s-date" class="label">{{ $t('home.date') }}</label>
           <input id="s-date" v-model="filters.date" type="date" :min="todayISO()" class="input" />
@@ -68,11 +69,7 @@ onMounted(() => load(1))
         </div>
       </div>
 
-      <button type="button" class="text-sm font-semibold text-brand-700" :aria-expanded="showMore" @click="showMore = !showMore">
-        {{ showMore ? $t('search.fewerFilters') : $t('search.moreFilters') }}
-      </button>
-
-      <div v-if="showMore" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div v-if="showMore" class="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div>
           <label for="s-from" class="label">{{ $t('search.timeFrom') }}</label>
           <input id="s-from" v-model="filters.time_from" type="time" class="input" />
@@ -94,7 +91,12 @@ onMounted(() => load(1))
         </label>
       </div>
 
-      <button type="submit" class="btn-primary w-full sm:w-auto"><AppIcon name="search" class="size-5" />{{ $t('home.searchBtn') }}</button>
+      <div class="flex items-center gap-3">
+        <button type="submit" class="btn-primary flex-1 sm:flex-none"><AppIcon name="search" class="size-5" />{{ $t('home.searchBtn') }}</button>
+        <button type="button" class="btn-ghost btn-sm shrink-0" :aria-expanded="showMore" @click="showMore = !showMore">
+          {{ showMore ? $t('search.fewerFilters') : $t('search.moreFilters') }}
+        </button>
+      </div>
     </form>
 
     <LoadingState v-if="loading" />

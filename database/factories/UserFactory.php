@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Enums\UserRole;
+use App\Models\Role;
 use App\Enums\UserStatus;
 use Database\Factories\Support\EgyptianData;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -24,7 +24,6 @@ class UserFactory extends Factory
             'email' => fake()->unique()->userName().fake()->numberBetween(10, 999).'@example.com',
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
-            'role' => UserRole::User,
             'status' => UserStatus::Active,
             'remember_token' => Str::random(10),
         ];
@@ -37,7 +36,13 @@ class UserFactory extends Factory
 
     public function admin(): static
     {
-        return $this->state(fn () => ['role' => UserRole::Admin]);
+        return $this->state(fn () => ['role_id' => Role::superAdmin()->id]);
+    }
+
+    /** Staff member with a specific (usually limited) role. */
+    public function withRole(Role $role): static
+    {
+        return $this->state(fn () => ['role_id' => $role->id]);
     }
 
     public function blocked(): static

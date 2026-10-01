@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { i18n } from '@/i18n'
+import { adminSections, firstAllowedSection } from './adminSections'
 
 const AppLayout = () => import('@/layouts/AppLayout.vue')
 const AuthLayout = () => import('@/layouts/AuthLayout.vue')
@@ -45,12 +46,8 @@ const routes = [
     component: AdminLayout,
     meta: { auth: true, admin: true },
     children: [
-      { path: '', name: 'admin', component: () => import('@/views/admin/AdminDashboardView.vue'), meta: { title: 'admin.dashboard' } },
-      { path: 'users', name: 'admin-users', component: () => import('@/views/admin/AdminUsersView.vue'), meta: { title: 'admin.users' } },
-      { path: 'trips', name: 'admin-trips', component: () => import('@/views/admin/AdminTripsView.vue'), meta: { title: 'admin.trips' } },
-      { path: 'bookings', name: 'admin-bookings', component: () => import('@/views/admin/AdminBookingsView.vue'), meta: { title: 'admin.bookings' } },
-      { path: 'requests', name: 'admin-requests', component: () => import('@/views/admin/AdminRequestsView.vue'), meta: { title: 'admin.requests' } },
-      { path: 'reports', name: 'admin-reports', component: () => import('@/views/admin/AdminReportsView.vue'), meta: { title: 'admin.reports' } },
+      ...adminSections.map((s) => ({ path: s.path, name: s.name, component: s.component, meta: { title: s.label, permission: s.permission } })),
+      { path: 'users/:id', name: 'admin-user', component: () => import('@/views/admin/AdminUserView.vue'), props: true, meta: { title: 'admin.userDetails', permission: 'users.view' } },
     ],
   },
   { path: '/:pathMatch(.*)*', name: 'not-found', component: () => import('@/views/NotFoundView.vue') },
@@ -74,6 +71,11 @@ router.beforeEach(async (to) => {
   }
   if (to.matched.some((r) => r.meta.admin) && !auth.isAdmin) {
     return { name: 'home' }
+  }
+  // Staff without the section's permission land on the first section they may open.
+  if (to.meta.permission && !auth.can(to.meta.permission)) {
+    const fallback = firstAllowedSection(auth.can)
+    return fallback && fallback.name !== to.name ? { name: fallback.name } : { name: 'home' }
   }
 })
 

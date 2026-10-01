@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">مشوار</string>
+    <string name="title_activity_main">مشوار</string>
+    <string name="package_name">com.mishwar.app</string>
+    <string name="custom_url_scheme">com.mishwar.app</string>
+</resources>

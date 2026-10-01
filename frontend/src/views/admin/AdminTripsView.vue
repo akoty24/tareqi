@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { adminApi } from '@/api'
 import { usePaginated } from '@/composables/usePaginated'
 import { useToastStore } from '@/stores/toast'
+import { useAuthStore } from '@/stores/auth'
 import { formatShortDate, formatTime, formatNumber } from '@/utils/format'
 import AdminTable from '@/components/AdminTable.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
@@ -11,6 +12,7 @@ import PromptDialog from '@/components/PromptDialog.vue'
 
 const { t } = useI18n()
 const toast = useToastStore()
+const auth = useAuthStore()
 const filters = reactive({ search: '', status: '', date: '' })
 const search = ref('')
 const cancelling = ref(null)
@@ -53,7 +55,7 @@ onMounted(() => load(1))
         <td class="px-3 py-2">{{ formatNumber(trip.bookings_count) }}</td>
         <td class="px-3 py-2"><StatusBadge kind="trip" :status="trip.status" /></td>
         <td class="px-3 py-2">
-          <button v-if="['draft', 'published', 'full'].includes(trip.status)" type="button" class="btn-danger btn-sm" @click="cancelling = trip">{{ $t('trip.cancel') }}</button>
+          <button v-if="auth.can('trips.manage') && ['draft', 'published', 'full'].includes(trip.status)" type="button" class="btn-danger btn-sm" @click="cancelling = trip">{{ $t('trip.cancel') }}</button>
         </td>
       </tr>
     </AdminTable>

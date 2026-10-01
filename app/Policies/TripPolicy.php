@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\Permission;
 use App\Enums\TripStatus;
 use App\Models\Trip;
 use App\Models\User;
@@ -16,7 +17,7 @@ class TripPolicy
         }
 
         return $trip->isOwnedBy($user)
-            || $user->isAdmin()
+            || $user->hasPermission(Permission::TripsView)
             || $trip->bookings()->where('passenger_id', $user->id)->exists();
     }
 
@@ -44,6 +45,6 @@ class TripPolicy
     /** Admin moderation (e.g. cancelling an inappropriate trip). */
     public function moderate(User $user, Trip $trip): bool
     {
-        return $user->isAdmin();
+        return $user->hasPermission(Permission::TripsManage);
     }
 }

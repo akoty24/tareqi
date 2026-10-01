@@ -42,5 +42,10 @@ return [
     'report_target_required' => 'حدد المستخدم أو الرحلة أو الحجز المُبلَّغ عنه.',
     'cannot_report_self' => 'لا يمكنك الإبلاغ عن نفسك.',
     'trip_request_not_active' => 'هذا الطلب غير نشط.',
-    'cannot_moderate_admin' => 'لا يمكن إيقاف حساب مدير.',
+    'cannot_moderate_admin' => 'فقط المدير العام يمكنه تعديل حسابات فريق الإدارة.',
+    'cannot_moderate_self' => 'لا يمكنك تنفيذ هذا الإجراء على حسابك.',
+    'cannot_moderate_super_admin' => 'لا يمكن إيقاف أو تعديل حساب المدير العام.',
+    'cannot_grant_super_admin' => 'فقط المدير العام يمكنه منح دور المدير العام.',
+    'role_is_system' => 'لا يمكن تعديل أو حذف دور النظام.',
+    'role_has_users' => 'لا يمكن حذف دور مُعيَّن لمستخدمين. انقلهم لدور آخر أولاً.',
 ];

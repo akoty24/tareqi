@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { authApi, profileApi } from '@/api'
@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
 import { useForm } from '@/composables/useForm'
 import { setLocale, SUPPORTED } from '@/i18n'
-import { formatNumber } from '@/utils/format'
+import { formatNumber, formatRating } from '@/utils/format'
 import FormField from '@/components/FormField.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
 import AppIcon from '@/components/AppIcon.vue'
@@ -55,6 +55,21 @@ async function uploadPhoto(event) {
   }
 }
 
+const savingSettings = ref(false)
+async function saveSetting(channel, enabled) {
+  savingSettings.value = true
+  try {
+    const response = await profileApi.updateNotificationSettings({ [channel]: enabled })
+    profile.value = { ...profile.value, notification_settings: response.data.notification_settings }
+    auth.user = { ...auth.user, notification_settings: response.data.notification_settings }
+    toast.success(response.message)
+  } catch (e) {
+    toast.error(e.message)
+  } finally {
+    savingSettings.value = false
+  }
+}
+
 async function resendVerification() {
   try {
     toast.success((await authApi.resendVerification()).message)
@@ -66,6 +81,10 @@ async function resendVerification() {
 onMounted(async () => {
   await load()
   if (route.query.verified) toast.success(t('profile.emailVerified'))
+  if (route.hash) {
+    await nextTick()
+    document.querySelector(route.hash)?.scrollIntoView({ behavior: 'smooth' })
+  }
 })
 </script>
 
@@ -77,7 +96,7 @@ onMounted(async () => {
         <h1 class="text-2xl font-extrabold">{{ profile.name }}</h1>
         <p class="flex items-center gap-1 text-slate-600">
           <AppIcon name="star" class="size-4 fill-current text-amber-500" />
-          {{ profile.ratings_count ? `${formatNumber(profile.rating_average)} (${formatNumber(profile.ratings_count)})` : $t('rating.new') }}
+          {{ profile.ratings_count ? `${formatRating(profile.rating_average)} (${formatNumber(profile.ratings_count)})` : $t('rating.new') }}
         </p>
         <p class="text-sm text-slate-500">
           {{ $t('profile.completedTrips', { n: formatNumber(profile.completed_trips_as_owner ?? 0) }) }} ·
@@ -122,6 +141,34 @@ onMounted(async () => {
       </FormField>
       <button type="submit" class="btn-primary" :disabled="password.submitting.value">{{ $t('profile.changePassword') }}</button>
     </form>
+
+    <section id="notification-settings" class="card">
+      <h2 class="mb-1 font-extrabold">{{ $t('profile.notifications') }}</h2>
+      <p class="mb-3 text-sm text-slate-600">{{ $t('profile.notificationsHint') }}</p>
+      <div class="divide-y divide-slate-100">
+        <label v-for="channel in ['email', 'push']" :key="channel" class="flex cursor-pointer items-center justify-between gap-3 py-3">
+          <span class="flex items-start gap-3">
+            <AppIcon :name="channel === 'email' ? 'mail' : 'devices'" class="mt-0.5 size-5 text-brand-700" />
+            <span>
+              <span class="block font-semibold">{{ $t(`profile.channels.${channel}`) }}</span>
+              <span class="block text-sm text-slate-500">{{ $t(`profile.channelHints.${channel}`) }}</span>
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            role="switch"
+            class="peer sr-only"
+            :checked="profile.notification_settings?.[channel]"
+            :disabled="savingSettings"
+            @change="saveSetting(channel, $event.target.checked)"
+          />
+          <span
+            class="relative h-6 w-11 shrink-0 rounded-full bg-slate-300 transition after:absolute after:top-0.5 after:start-0.5 after:size-5 after:rounded-full after:bg-white after:shadow after:transition peer-checked:bg-brand-700 peer-checked:after:translate-x-5 rtl:peer-checked:after:-translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-400"
+            aria-hidden="true"
+          />
+        </label>
+      </div>
+    </section>
 
     <section class="card">
       <h2 class="mb-3 font-extrabold">{{ $t('profile.language') }}</h2>

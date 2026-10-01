@@ -23,6 +23,7 @@ export const profileApi = {
     return client.post('/profile/photo', form)
   },
   publicProfile: (id) => client.get(`/users/${id}`),
+  updateNotificationSettings: (payload) => client.put('/profile/notification-settings', payload),
 }
 
 export const vehiclesApi = {
@@ -72,8 +73,17 @@ export const ratingsApi = {
 
 export const notificationsApi = {
   list: (params) => client.get('/notifications', { params }),
+  unreadCount: () => client.get('/notifications/unread-count'),
   markRead: (id) => client.patch(`/notifications/${id}/read`),
   markAllRead: () => client.patch('/notifications/read-all'),
+  remove: (id) => client.delete(`/notifications/${id}`),
+  clearRead: () => client.delete('/notifications/read'),
+}
+
+// Push notification registration of the mobile app (FCM token).
+export const devicesApi = {
+  register: (token, platform) => client.post('/devices', { token, platform }),
+  unregister: (token) => client.delete('/devices', { data: { token } }),
 }
 
 export const reportsApi = {
@@ -82,14 +92,35 @@ export const reportsApi = {
 
 export const adminApi = {
   dashboard: () => client.get('/admin/dashboard'),
+  // Users & roles
   users: (params) => client.get('/admin/users', { params }),
+  user: (id) => client.get(`/admin/users/${id}`),
+  updateUser: (id, payload) => client.put(`/admin/users/${id}`, payload),
   blockUser: (id) => client.patch(`/admin/users/${id}/block`),
   unblockUser: (id) => client.patch(`/admin/users/${id}/unblock`),
+  assignRole: (id, roleId) => client.patch(`/admin/users/${id}/role`, { role_id: roleId }),
+  revokeSessions: (id) => client.delete(`/admin/users/${id}/sessions`),
+  roles: () => client.get('/admin/roles'),
+  permissions: () => client.get('/admin/permissions'),
+  createRole: (payload) => client.post('/admin/roles', payload),
+  updateRole: (id, payload) => client.put(`/admin/roles/${id}`, payload),
+  deleteRole: (id) => client.delete(`/admin/roles/${id}`),
+  // Content
   trips: (params) => client.get('/admin/trips', { params }),
   cancelTrip: (id, reason) => client.patch(`/admin/trips/${id}/cancel`, { reason }),
   bookings: (params) => client.get('/admin/bookings', { params }),
+  cancelBooking: (id, reason) => client.patch(`/admin/bookings/${id}/cancel`, { reason }),
   tripRequests: (params) => client.get('/admin/trip-requests', { params }),
+  cancelTripRequest: (id) => client.patch(`/admin/trip-requests/${id}/cancel`),
+  vehicles: (params) => client.get('/admin/vehicles', { params }),
+  deleteVehicle: (id) => client.delete(`/admin/vehicles/${id}`),
+  ratings: (params) => client.get('/admin/ratings', { params }),
+  deleteRating: (id) => client.delete(`/admin/ratings/${id}`),
   reports: (params) => client.get('/admin/reports', { params }),
   report: (id) => client.get(`/admin/reports/${id}`),
   updateReport: (id, payload) => client.patch(`/admin/reports/${id}`, payload),
+  // Communication & audit
+  announcements: (params) => client.get('/admin/announcements', { params }),
+  sendAnnouncement: (payload) => client.post('/admin/announcements', payload),
+  activity: (params) => client.get('/admin/activity', { params }),
 }

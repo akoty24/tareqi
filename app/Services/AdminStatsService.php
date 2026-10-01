@@ -8,10 +8,12 @@ use App\Enums\TripRequestStatus;
 use App\Enums\TripStatus;
 use App\Enums\UserStatus;
 use App\Models\Booking;
+use App\Models\Rating;
 use App\Models\Report;
 use App\Models\Trip;
 use App\Models\TripRequest;
 use App\Models\User;
+use App\Models\Vehicle;
 
 class AdminStatsService
 {
@@ -54,6 +56,13 @@ class AdminStatsService
                 'total' => (int) $reports->sum(),
                 'pending' => $count($reports, ReportStatus::Pending),
             ],
+            'staff' => User::query()->staff()->count(),
+            'vehicles' => Vehicle::query()->count(),
+            'ratings' => [
+                'total' => Rating::query()->count(),
+                'average' => round((float) Rating::query()->avg('stars'), 2),
+            ],
+            'new_users_this_week' => User::query()->where('created_at', '>=', now()->subWeek())->count(),
         ];
     }
 }

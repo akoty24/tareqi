@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\ReasonRequest;
 use App\Http\Resources\TripResource;
 use App\Models\Trip;
+use App\Services\ActivityLogger;
 use App\Services\TripService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,11 +39,15 @@ class TripController extends Controller
     }
 
     /** Cancel an inappropriate trip; passengers and the owner are notified. */
-    public function cancel(ReasonRequest $request, Trip $trip, TripService $trips): JsonResponse
+    public function cancel(ReasonRequest $request, Trip $trip, TripService $trips, ActivityLogger $activity): JsonResponse
     {
         $this->authorize('moderate', $trip);
 
         $trip = $trips->cancel($trip, $request->input('reason'), byAdmin: true);
+        $activity->log('trip.cancelled', $trip, [
+            'route' => "{$trip->origin} ← {$trip->destination}",
+            'reason' => $request->input('reason'),
+        ]);
 
         return $this->updated(new TripResource($trip), __('messages.trip_cancelled'));
     }

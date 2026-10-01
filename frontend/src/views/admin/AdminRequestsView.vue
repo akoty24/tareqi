@@ -2,13 +2,26 @@
 import { onMounted, reactive, ref } from 'vue'
 import { adminApi } from '@/api'
 import { usePaginated } from '@/composables/usePaginated'
+import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
 import { formatShortDate, formatTime, formatNumber } from '@/utils/format'
 import AdminTable from '@/components/AdminTable.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 
 const filters = reactive({ search: '', status: '' })
 const search = ref('')
-const { items, meta, loading, load } = usePaginated((p) => adminApi.tripRequests(p), filters)
+const { items, meta, loading, load, page } = usePaginated((p) => adminApi.tripRequests(p), filters)
+const auth = useAuthStore()
+const toast = useToastStore()
+
+async function close(request) {
+  try {
+    toast.success((await adminApi.cancelTripRequest(request.id)).message)
+    await load(page.value)
+  } catch (e) {
+    toast.error(e.message)
+  }
+}
 
 onMounted(() => load(1))
 </script>
@@ -25,7 +38,7 @@ onMounted(() => load(1))
       <button type="submit" class="btn-primary btn-sm">{{ $t('common.search') }}</button>
     </form>
 
-    <AdminTable :columns="['admin.passenger', 'admin.route', 'home.date', 'trip.time', 'search.passengers', 'admin.matches', 'common.status']" :items="items" :meta="meta" :loading="loading" @page="load">
+    <AdminTable :columns="['admin.passenger', 'admin.route', 'home.date', 'trip.time', 'search.passengers', 'admin.matches', 'common.status', 'common.actions']" :items="items" :meta="meta" :loading="loading" @page="load">
       <tr v-for="r in items" :key="r.id">
         <td class="px-3 py-2 font-semibold">{{ r.user?.name }}</td>
         <td class="px-3 py-2">{{ r.origin }} ← {{ r.destination }}</td>
@@ -34,6 +47,9 @@ onMounted(() => load(1))
         <td class="px-3 py-2">{{ formatNumber(r.passengers_count) }}</td>
         <td class="px-3 py-2">{{ formatNumber(r.matched_trips_count) }}</td>
         <td class="px-3 py-2"><StatusBadge kind="request" :status="r.status" /></td>
+        <td class="px-3 py-2">
+          <button v-if="auth.can('trip_requests.manage') && r.status === 'active'" type="button" class="btn-secondary btn-sm" @click="close(r)">{{ $t('admin.closeRequest') }}</button>
+        </td>
       </tr>
     </AdminTable>
   </div>

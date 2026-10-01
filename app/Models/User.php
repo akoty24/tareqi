@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use App\Enums\BookingStatus;
+use App\Enums\Permission;
 use App\Enums\TripStatus;
-use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -25,6 +26,14 @@ class User extends Authenticatable implements MustVerifyEmail
         'phone',
         'email',
         'password',
+        'notify_email',
+        'notify_push',
+    ];
+
+    /** Same defaults as the columns, so fresh instances are complete. */
+    protected $attributes = [
+        'notify_email' => true,
+        'notify_push' => true,
     ];
 
     protected $hidden = [
@@ -38,11 +47,22 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'blocked_at' => 'datetime',
             'password' => 'hashed',
-            'role' => UserRole::class,
             'status' => UserStatus::class,
             'rating_average' => 'decimal:2',
             'ratings_count' => 'integer',
+            'notify_email' => 'boolean',
+            'notify_push' => 'boolean',
         ];
+    }
+
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function deviceTokens(): HasMany
+    {
+        return $this->hasMany(DeviceToken::class);
     }
 
     public function vehicles(): HasMany
@@ -75,9 +95,32 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Rating::class, 'rater_id');
     }
 
+    /** Staff member: any user with a role can open the admin panel. */
     public function isAdmin(): bool
     {
-        return $this->role === UserRole::Admin;
+        return $this->role_id !== null;
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return (bool) $this->role?->is_super;
+    }
+
+    public function hasPermission(Permission|string $permission): bool
+    {
+        return (bool) $this->role?->hasPermission($permission);
+    }
+
+    /** @return list<string> */
+    public function permissions(): array
+    {
+        return $this->role?->effectivePermissions() ?? [];
+    }
+
+    /** FCM routing: every registered device of the user. */
+    public function routeNotificationForFcm(): array
+    {
+        return $this->deviceTokens()->pluck('token')->all();
     }
 
     public function isActive(): bool
@@ -99,6 +142,16 @@ class User extends Authenticatable implements MustVerifyEmail
             'trips as completed_trips_as_owner_count' => fn ($q) => $q->where('status', TripStatus::Completed),
             'bookings as completed_trips_as_passenger_count' => fn ($q) => $q->where('status', BookingStatus::Completed),
         ]);
+    }
+
+    public function scopeStaff(Builder $query): Builder
+    {
+        return $query->whereNotNull('role_id');
+    }
+
+    public function scopeMembers(Builder $query): Builder
+    {
+        return $query->whereNull('role_id');
     }
 
     public function scopeSearch(Builder $query, ?string $term): Builder

@@ -1,15 +1,35 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { adminApi } from '@/api'
 import { usePaginated } from '@/composables/usePaginated'
+import { useAuthStore } from '@/stores/auth'
+import { useToastStore } from '@/stores/toast'
+import PromptDialog from '@/components/PromptDialog.vue'
 import { formatShortDate, formatMoney, formatNumber } from '@/utils/format'
 import AdminTable from '@/components/AdminTable.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 
 const filters = reactive({ search: '', status: '' })
 const search = ref('')
-const { items, meta, loading, load } = usePaginated((p) => adminApi.bookings(p), filters)
+const { items, meta, loading, load, page } = usePaginated((p) => adminApi.bookings(p), filters)
 const statuses = ['pending', 'confirmed', 'rejected', 'cancelled', 'completed']
+const { t } = useI18n()
+const auth = useAuthStore()
+const toast = useToastStore()
+const cancelling = ref(null)
+const cancellable = (b) => ['pending', 'confirmed'].includes(b.status) && ['published', 'full'].includes(b.trip?.status)
+
+async function cancel(reason) {
+  try {
+    toast.success((await adminApi.cancelBooking(cancelling.value.id, reason)).message)
+    await load(page.value)
+  } catch (e) {
+    toast.error(e.message)
+  } finally {
+    cancelling.value = null
+  }
+}
 
 onMounted(() => load(1))
 </script>
@@ -26,7 +46,7 @@ onMounted(() => load(1))
       <button type="submit" class="btn-primary btn-sm">{{ $t('common.search') }}</button>
     </form>
 
-    <AdminTable :columns="['admin.passenger', 'admin.route', 'home.date', 'booking.seats', 'booking.total', 'common.status', 'admin.created']" :items="items" :meta="meta" :loading="loading" @page="load">
+    <AdminTable :columns="['admin.passenger', 'admin.route', 'home.date', 'booking.seats', 'booking.total', 'common.status', 'admin.created', 'common.actions']" :items="items" :meta="meta" :loading="loading" @page="load">
       <tr v-for="b in items" :key="b.id">
         <td class="px-3 py-2 font-semibold">{{ b.passenger?.name }}</td>
         <td class="px-3 py-2"><RouterLink :to="{ name: 'trip', params: { id: b.trip_id } }" class="hover:underline">{{ b.trip?.origin }} ← {{ b.trip?.destination }}</RouterLink></td>
@@ -35,7 +55,21 @@ onMounted(() => load(1))
         <td class="px-3 py-2">{{ formatMoney(b.total_price) }}</td>
         <td class="px-3 py-2"><StatusBadge kind="booking" :status="b.status" /></td>
         <td class="px-3 py-2">{{ formatShortDate(b.created_at) }}</td>
+        <td class="px-3 py-2">
+          <button v-if="auth.can('bookings.manage') && cancellable(b)" type="button" class="btn-danger btn-sm" @click="cancelling = b">{{ $t('booking.cancel') }}</button>
+        </td>
       </tr>
     </AdminTable>
+
+    <PromptDialog
+      :open="!!cancelling"
+      :title="t('admin.cancelBookingTitle')"
+      :message="t('admin.cancelBookingMessage')"
+      :confirm-label="t('booking.cancel')"
+      with-reason
+      danger
+      @close="cancelling = null"
+      @confirm="cancel"
+    />
   </div>
 </template>

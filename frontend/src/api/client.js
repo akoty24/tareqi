@@ -9,8 +9,35 @@ export const tokenStorage = {
   clear: () => localStorage.removeItem(TOKEN_KEY),
 }
 
+// The Android app talks to an absolute API URL. It defaults to VITE_API_URL
+// (see .env.android) and can be changed from the login screen, so one APK
+// works against a dev PC on the LAN or the production server.
+const API_URL_KEY = 'mishwar_api_url'
+const DEFAULT_API_URL = import.meta.env.VITE_API_URL || '/api'
+
+export const apiUrlStorage = {
+  default: DEFAULT_API_URL,
+  get: () => {
+    try {
+      return localStorage.getItem(API_URL_KEY) || DEFAULT_API_URL
+    } catch {
+      return DEFAULT_API_URL
+    }
+  },
+  set: (url) => {
+    const value = (url || '').trim().replace(/\/+$/, '')
+    try {
+      if (value && value !== DEFAULT_API_URL) localStorage.setItem(API_URL_KEY, value)
+      else localStorage.removeItem(API_URL_KEY)
+    } catch {
+      /* ignore */
+    }
+    client.defaults.baseURL = apiUrlStorage.get()
+  },
+}
+
 const client = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: apiUrlStorage.get(),
   headers: { Accept: 'application/json' },
 })
 

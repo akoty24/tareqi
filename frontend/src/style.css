@@ -60,3 +60,11 @@
 @utility page-title {
   @apply mb-4 text-2xl font-extrabold text-slate-900;
 }
+
+/* Android app (edge-to-edge): keep bars clear of the status / navigation bar. */
+@utility safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+@utility safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}

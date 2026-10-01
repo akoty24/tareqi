@@ -42,5 +42,10 @@ return [
     'report_target_required' => 'Specify the reported user, trip or booking.',
     'cannot_report_self' => 'You cannot report yourself.',
     'trip_request_not_active' => 'This trip request is not active.',
-    'cannot_moderate_admin' => 'Administrators cannot be blocked.',
+    'cannot_moderate_admin' => 'Only a super admin can change staff accounts.',
+    'cannot_moderate_self' => 'You cannot do this to your own account.',
+    'cannot_moderate_super_admin' => 'Super admin accounts cannot be blocked or edited.',
+    'cannot_grant_super_admin' => 'Only a super admin can grant the super admin role.',
+    'role_is_system' => 'System roles cannot be edited or deleted.',
+    'role_has_users' => 'This role is assigned to users. Move them to another role first.',
 ];

@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Enums\TripRequestStatus;
-use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\TripRequest;
 use App\Models\User;
@@ -14,7 +13,7 @@ class TripRequestSeeder extends Seeder
     public function run(): void
     {
         $users = User::query()
-            ->where('role', UserRole::User)
+            ->members()
             ->where('status', UserStatus::Active)
             ->get();
 

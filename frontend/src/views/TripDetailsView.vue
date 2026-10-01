@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { tripsApi, bookingsApi } from '@/api'
 import { useToastStore } from '@/stores/toast'
-import { formatDate, formatTime, formatMoney, tripPriceLabel, formatNumber, formatDateTime } from '@/utils/format'
+import { formatDate, formatTime, formatMoney, tripPriceLabel, formatNumber, formatRating, formatDateTime } from '@/utils/format'
 import AppIcon from '@/components/AppIcon.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
@@ -49,6 +49,12 @@ const myBooking = computed(() => trip.value?.my_booking)
 const activeBooking = computed(() => ['pending', 'confirmed'].includes(myBooking.value?.status))
 const canBook = computed(() => trip.value && !trip.value.is_mine && trip.value.status === 'published' && !activeBooking.value)
 const canEdit = computed(() => trip.value?.is_mine && ['draft', 'published', 'full'].includes(trip.value.status))
+// Mirror the backend rules so owners only see actions that will succeed:
+// start from 2 hours before departure, complete once the trip has departed.
+const departureMs = computed(() => (trip.value ? new Date(trip.value.departure_at).getTime() : 0))
+const isOpen = computed(() => ['published', 'full'].includes(trip.value?.status))
+const canStart = computed(() => isOpen.value && Date.now() >= departureMs.value - 2 * 3600_000)
+const canComplete = computed(() => trip.value?.status === 'started' || (isOpen.value && Date.now() >= departureMs.value))
 const totalPrice = computed(() => (trip.value ? trip.value.seat_price * seats.value : 0))
 const pendingBookings = computed(() => trip.value?.bookings?.filter((b) => b.status === 'pending') ?? [])
 const otherBookings = computed(() => trip.value?.bookings?.filter((b) => b.status !== 'pending') ?? [])
@@ -190,7 +196,7 @@ onMounted(load)
 
     <!-- Sidebar: owner card + actions -->
     <aside class="space-y-5">
-      <section class="card">
+      <section v-if="!trip.is_mine" class="card">
         <h2 class="mb-3 text-sm font-bold text-slate-500">{{ $t('trip.driver') }}</h2>
         <RouterLink :to="{ name: 'user', params: { id: trip.owner.id } }" class="flex items-center gap-3">
           <UserAvatar :user="trip.owner" />
@@ -198,7 +204,7 @@ onMounted(load)
             <p class="font-extrabold">{{ trip.owner.name }}</p>
             <p class="flex items-center gap-1 text-sm text-slate-600">
               <AppIcon name="star" class="size-4 fill-current text-amber-500" />
-              <template v-if="trip.owner.ratings_count">{{ formatNumber(trip.owner.rating_average) }} ({{ formatNumber(trip.owner.ratings_count) }})</template>
+              <template v-if="trip.owner.ratings_count">{{ formatRating(trip.owner.rating_average) }} ({{ formatNumber(trip.owner.ratings_count) }})</template>
               <template v-else>{{ $t('rating.new') }}</template>
             </p>
             <p v-if="trip.owner.completed_trips_as_owner !== undefined" class="text-xs text-slate-500">{{ $t('profile.completedTrips', { n: formatNumber(trip.owner.completed_trips_as_owner) }) }}</p>
@@ -245,11 +251,11 @@ onMounted(load)
       <p v-else-if="!trip.is_mine && !myBooking && trip.status !== 'published'" class="card text-center text-slate-600">{{ $t('booking.notAvailable') }}</p>
 
       <!-- Owner actions -->
-      <section v-if="trip.is_mine" class="card space-y-2">
+      <section v-if="trip.is_mine && !['completed', 'cancelled'].includes(trip.status)" class="card space-y-2">
         <h2 class="mb-1 font-extrabold">{{ $t('trip.manage') }}</h2>
         <button v-if="trip.status === 'draft'" type="button" class="btn-primary w-full" @click="ask('publish')">{{ $t('trip.publish') }}</button>
-        <button v-if="['published', 'full'].includes(trip.status)" type="button" class="btn-primary w-full" @click="ask('start')">{{ $t('trip.start') }}</button>
-        <button v-if="['started', 'published', 'full'].includes(trip.status)" type="button" class="btn-secondary w-full" @click="ask('complete')">{{ $t('trip.complete') }}</button>
+        <button v-if="canStart" type="button" class="btn-primary w-full" @click="ask('start')">{{ $t('trip.start') }}</button>
+        <button v-if="canComplete" type="button" class="btn-secondary w-full" @click="ask('complete')">{{ $t('trip.complete') }}</button>
         <RouterLink v-if="canEdit" :to="{ name: 'trip-edit', params: { id: trip.id } }" class="btn-secondary w-full"><AppIcon name="edit" class="size-4" />{{ $t('common.edit') }}</RouterLink>
         <button v-if="canEdit && !trip.is_return_trip && !trip.return_trip" type="button" class="btn-secondary w-full" @click="returnOpen = true">
           <AppIcon name="return" class="size-4" />{{ $t('trip.addReturn') }}

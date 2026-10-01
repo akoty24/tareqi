@@ -1,7 +1,8 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
-import { authApi } from '@/api'
+import { authApi, notificationsApi } from '@/api'
 import { tokenStorage } from '@/api/client'
+import { unregisterPush } from '@/native'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
@@ -10,7 +11,19 @@ export const useAuthStore = defineStore('auth', () => {
   const initialized = ref(false)
 
   const isAuthenticated = computed(() => !!token.value && !!user.value)
-  const isAdmin = computed(() => user.value?.role === 'admin')
+  // Staff = any user with a role; what they can do depends on its permissions.
+  const isAdmin = computed(() => !!user.value?.role)
+  const isSuperAdmin = computed(() => !!user.value?.role?.is_super)
+  const permissions = computed(() => new Set(user.value?.permissions ?? []))
+
+  /** can('users.block') — mirrors the backend Gate abilities. */
+  function can(permission) {
+    return permissions.value.has(permission)
+  }
+
+  function canAny(list) {
+    return list.some((p) => permissions.value.has(p))
+  }
 
   function setSession({ user: u, token: t }) {
     user.value = u
@@ -44,6 +57,13 @@ export const useAuthStore = defineStore('auth', () => {
     unreadNotifications.value = data.unread_notifications
   }
 
+  /** Lightweight badge refresh (polling, push received, app resumed). */
+  async function refreshUnread() {
+    if (!token.value) return
+    const { data } = await notificationsApi.unreadCount()
+    unreadNotifications.value = data.unread_count
+  }
+
   async function login(credentials) {
     const { data } = await authApi.login(credentials)
     setSession(data)
@@ -56,6 +76,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function logout() {
     try {
+      await unregisterPush()
       await authApi.logout()
     } finally {
       clearSession()
@@ -64,7 +85,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   return {
     user, token, unreadNotifications, initialized,
-    isAuthenticated, isAdmin,
-    init, refresh, login, register, logout, clearSession,
+    isAuthenticated, isAdmin, isSuperAdmin, permissions,
+    can, canAny, init, refresh, refreshUnread, login, register, logout, clearSession,
   }
 })

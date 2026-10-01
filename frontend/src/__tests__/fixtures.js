@@ -5,11 +5,33 @@ export const meta = { current_page: 1, last_page: 2, per_page: 15, total: 20, fr
 export const ok = (data, message = 'تم بنجاح.') => Promise.resolve({ success: true, message, data })
 export const page = (data, extraMeta = {}) => Promise.resolve({ success: true, message: '', data, meta: { ...meta, ...extraMeta } })
 
+export const ALL_PERMISSIONS = [
+  'dashboard.view', 'users.view', 'users.update', 'users.block', 'roles.manage', 'trips.view', 'trips.manage',
+  'bookings.view', 'bookings.manage', 'trip_requests.view', 'trip_requests.manage', 'vehicles.view', 'vehicles.manage',
+  'ratings.view', 'ratings.manage', 'reports.view', 'reports.manage', 'notifications.send', 'activity.view',
+]
+
+export const superRole = {
+  id: 1, name: 'super-admin', display_name: 'مدير عام', description: 'صلاحيات كاملة على المنصة.',
+  is_system: true, is_super: true, permissions: ALL_PERMISSIONS, users_count: 1, created_at: '2026-09-01T10:00:00+03:00',
+}
+export const moderatorRole = {
+  id: 2, name: 'moderator', display_name: 'مشرف', description: 'متابعة البلاغات.', is_system: false, is_super: false,
+  permissions: ['dashboard.view', 'reports.view', 'reports.manage'], users_count: 0, created_at: '2026-09-01T10:00:00+03:00',
+}
+
 export const admin = {
   id: 1, name: 'مدير المنصة', phone: '01000000000', email: 'admin@mishwar.test', email_verified: false,
-  profile_photo_url: null, role: 'admin', status: 'active', blocked_at: null, rating_average: 4.5, ratings_count: 2,
+  profile_photo_url: null, role: superRole, permissions: ALL_PERMISSIONS, notification_settings: { email: true, push: true },
+  status: 'active', blocked_at: null, rating_average: 4.5, ratings_count: 2,
   completed_trips_as_owner: 3, completed_trips_as_passenger: 1, created_at: '2026-09-01T10:00:00+03:00',
 }
+
+/** A regular community member (no staff role). */
+export const member = (overrides = {}) => ({ ...admin, id: 7, name: 'مستخدم عادي', role: null, permissions: [], ...overrides })
+
+/** A staff member limited to a role's permissions. */
+export const staffUser = (role = moderatorRole) => ({ ...admin, id: 8, name: 'مشرف المنصة', role, permissions: role.permissions })
 
 export const publicUser = {
   id: 2, name: 'أحمد محمود الشافعي', profile_photo_url: null, rating_average: 4.8, ratings_count: 6,
@@ -65,7 +87,7 @@ export const rating = {
 
 export const report = {
   id: 1, reason: 'fraud', description: 'طلب فلوس أكتر من المتفق عليه.', status: 'pending', trip_id: 10, booking_id: null,
-  reporter: admin, reported_user: { ...admin, id: 7, name: 'مستخدم مُبلَّغ عنه', role: 'user' }, trip: null,
+  reporter: admin, reported_user: member({ name: 'مستخدم مُبلَّغ عنه' }), trip: null,
   admin_notes: null, reviewer: null, reviewed_at: null, created_at: '2026-09-29T10:00:00+03:00',
 }
 
@@ -75,6 +97,25 @@ export const stats = {
   bookings: { total: 56, pending: 7, confirmed: 30, completed: 19 },
   trip_requests: { total: 12, active: 9 },
   reports: { total: 5, pending: 3 },
+  staff: 3,
+  vehicles: 9,
+  ratings: { total: 20, average: 4.4 },
+  new_users_this_week: 4,
+}
+
+export const permissionGroups = [
+  { key: 'users', label: 'المستخدمون', permissions: [{ value: 'users.view', label: 'عرض المستخدمين وبياناتهم' }, { value: 'users.block', label: 'إيقاف وتفعيل الحسابات' }] },
+  { key: 'reports', label: 'البلاغات', permissions: [{ value: 'reports.view', label: 'عرض البلاغات' }, { value: 'reports.manage', label: 'مراجعة البلاغات' }] },
+]
+
+export const announcement = {
+  id: 1, title: 'أهلاً بيكم في مشوار', message: 'اعرض رحلتك أو اطلب مشوار.', link: '/search', audience: 'all', user_ids: [],
+  send_email: false, recipients_count: 15, sender: publicUser, sent_at: '2026-09-30T09:00:00+03:00', created_at: '2026-09-30T09:00:00+03:00',
+}
+
+export const activityLog = {
+  id: 1, action: 'user.blocked', description: 'إيقاف حساب حساب موقوف', subject_type: 'User', subject_id: 4,
+  properties: { name: 'حساب موقوف' }, causer: publicUser, ip_address: '127.0.0.1', created_at: '2026-09-30T09:00:00+03:00',
 }
 
 /** Builds the vi.mock factory for '@/api' with sensible defaults for every endpoint. */
@@ -95,7 +136,9 @@ export function apiMock(user = admin) {
       updatePassword: vi.fn(() => ok(null)),
       updatePhoto: vi.fn(() => ok(user)),
       publicProfile: vi.fn(() => ok({ user: publicUser, recent_ratings: [rating] })),
+      updateNotificationSettings: vi.fn((d) => ok({ ...user, notification_settings: { email: true, push: true, ...d } }, 'تم حفظ إعدادات الإشعارات.')),
     },
+    devicesApi: { register: vi.fn(() => ok(null)), unregister: vi.fn(() => ok(null)) },
     vehiclesApi: {
       list: vi.fn(() => ok([vehicle])),
       create: vi.fn(() => ok(vehicle)),
@@ -138,13 +181,37 @@ export function apiMock(user = admin) {
       list: vi.fn(() => page([notification], { unread_count: 1 })),
       markRead: vi.fn(() => ok(notification)),
       markAllRead: vi.fn(() => ok(null)),
+      unreadCount: vi.fn(() => ok({ unread_count: 2 })),
+      remove: vi.fn(() => ok(null, 'تم حذف الإشعار.')),
+      clearRead: vi.fn(() => ok(null, 'تم حذف الإشعارات المقروءة.')),
     },
     reportsApi: { create: vi.fn(() => ok(report)) },
     adminApi: {
       dashboard: vi.fn(() => ok(stats)),
-      users: vi.fn(() => page([admin, { ...admin, id: 7, role: 'user', name: 'مستخدم عادي' }])),
-      blockUser: vi.fn(() => ok(admin)),
-      unblockUser: vi.fn(() => ok(admin)),
+      users: vi.fn(() => page([admin, member()])),
+      user: vi.fn(() => ok({
+        user: member(), vehicles: [vehicle],
+        stats: { trips: 4, bookings: 6, trip_requests: 1, ratings_given: 3, ratings_received: 2, reports_against: 1, active_sessions: 2, devices: 1 },
+      })),
+      updateUser: vi.fn((id, d) => ok(member(d), 'تم تحديث بيانات المستخدم.')),
+      blockUser: vi.fn(() => ok(member({ status: 'blocked' }), 'تم إيقاف المستخدم.')),
+      unblockUser: vi.fn(() => ok(member())),
+      assignRole: vi.fn((id, roleId) => ok(member({ role: roleId ? moderatorRole : null }), 'تم تحديث دور المستخدم.')),
+      revokeSessions: vi.fn(() => ok(null)),
+      roles: vi.fn(() => ok([superRole, moderatorRole])),
+      permissions: vi.fn(() => ok(permissionGroups)),
+      createRole: vi.fn((d) => ok({ ...moderatorRole, id: 3, ...d }, 'تم إنشاء الدور.')),
+      updateRole: vi.fn((id, d) => ok({ ...moderatorRole, ...d }, 'تم تحديث الدور.')),
+      deleteRole: vi.fn(() => ok(null, 'تم حذف الدور.')),
+      cancelBooking: vi.fn(() => ok(booking({ status: 'cancelled' }))),
+      cancelTripRequest: vi.fn(() => ok({ ...tripRequest, status: 'cancelled' })),
+      vehicles: vi.fn(() => page([{ ...vehicle, owner: publicUser, deleted_at: null, created_at: '2026-09-01T10:00:00+03:00' }])),
+      deleteVehicle: vi.fn(() => ok(null)),
+      ratings: vi.fn(() => page([rating])),
+      deleteRating: vi.fn(() => ok(null)),
+      announcements: vi.fn(() => page([announcement])),
+      sendAnnouncement: vi.fn((d) => ok({ ...announcement, ...d }, 'جارٍ إرسال الإشعار إلى 15 مستخدم.')),
+      activity: vi.fn(() => page([activityLog])),
       trips: vi.fn(() => page([trip({ bookings_count: 2 })])),
       cancelTrip: vi.fn(() => ok(trip())),
       bookings: vi.fn(() => page([booking()])),

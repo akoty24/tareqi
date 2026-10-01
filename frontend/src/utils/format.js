@@ -35,6 +35,11 @@ export function formatNumber(value) {
   return new Intl.NumberFormat(intlLocale()).format(value ?? 0)
 }
 
+/** Ratings with one decimal: 4.333 -> "٤٫٣". */
+export function formatRating(value) {
+  return new Intl.NumberFormat(intlLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value ?? 0)
+}
+
 /** Human price label for a trip, according to its cost type. */
 export function tripPriceLabel(trip) {
   if (trip.cost_type === 'free') return t('trip.costType.free')

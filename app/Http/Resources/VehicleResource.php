@@ -17,6 +17,8 @@ class VehicleResource extends JsonResource
             'color' => $this->color,
             'plate_number' => $this->plate_number,
             'trips_count' => $this->whenCounted('trips'),
+            'owner' => new PublicUserResource($this->whenLoaded('user')),
+            'deleted_at' => $this->deleted_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

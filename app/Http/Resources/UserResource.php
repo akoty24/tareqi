@@ -22,7 +22,13 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'email_verified' => $this->email_verified_at !== null,
             'profile_photo_url' => $this->profilePhotoUrl(),
-            'role' => $this->role->value,
+            // Staff role (null for community members) and its effective permissions.
+            'role' => $this->role ? new RoleResource($this->role) : null,
+            'permissions' => $this->permissions(),
+            'notification_settings' => [
+                'email' => (bool) $this->notify_email,
+                'push' => (bool) $this->notify_push,
+            ],
             'status' => $this->status->value,
             'blocked_at' => $this->blocked_at?->toIso8601String(),
             'rating_average' => (float) $this->rating_average,

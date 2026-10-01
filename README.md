@@ -12,19 +12,21 @@ Mishwar connects people from the same village who are travelling in the same dir
 3. [Requirements](#requirements)
 4. [Installation (backend)](#installation-backend)
 5. [Frontend setup](#frontend-setup)
-6. [Test credentials](#test-credentials)
-7. [Running tests](#running-tests)
-8. [Architecture](#architecture)
-9. [Database](#database)
-10. [Matching engine](#matching-engine)
-11. [Business rules](#business-rules)
-12. [Authentication](#authentication)
-13. [API documentation](#api-documentation)
-14. [Project structure](#project-structure)
-15. [Deployment considerations](#deployment-considerations)
-16. [Assumptions](#assumptions)
-17. [Known limitations](#known-limitations)
-18. [Future improvements](#future-improvements)
+6. [Android app (APK)](#android-app-apk)
+7. [Test credentials](#test-credentials)
+8. [Roles and permissions](#roles-and-permissions)
+9. [Running tests](#running-tests)
+10. [Architecture](#architecture)
+11. [Database](#database)
+12. [Matching engine](#matching-engine)
+13. [Business rules](#business-rules)
+14. [Authentication](#authentication)
+15. [API documentation](#api-documentation)
+16. [Project structure](#project-structure)
+17. [Deployment considerations](#deployment-considerations)
+18. [Assumptions](#assumptions)
+19. [Known limitations](#known-limitations)
+20. [Future improvements](#future-improvements)
 
 ---
 
@@ -48,8 +50,19 @@ Mishwar connects people from the same village who are travelling in the same dir
   - Trips switch to `FULL` automatically, and back to `PUBLISHED` when seats free up.
 - **Ratings:** after completion, passenger → owner and owner → passenger, 1–5 stars with an optional review, at most once per booking.
 - **Reports:** report a user, trip or booking. Admins review them.
-- **Notifications:** stored in the database, emailed where useful, queued. There are reminders before departure, including a separate return-trip reminder.
-- **Admin:** dashboard statistics, users (search, filter, block, unblock), trips (filter, cancel inappropriate trips), bookings, trip requests and reports (filter and review).
+- **Notifications:**
+  - Stored in the database (notification center), emailed where useful, and sent as **push notifications** to the Android app (Firebase Cloud Messaging). All deliveries are queued.
+  - Reminders before departure, including a separate return-trip reminder.
+  - Users can delete notifications, clear read ones, and turn email or push off from their profile.
+  - Staff can **broadcast announcements** to everyone, vehicle owners, staff, or selected users (in-app + push, optional email).
+- **Admin panel with roles and permissions:**
+  - Staff roles with 19 fine-grained permissions (see [Roles and permissions](#roles-and-permissions)). A protected *super admin* role has everything; *moderator* and *customer support* roles are seeded and editable.
+  - Users: search, filter by role, details page with counters, edit details, verify email, assign a role, block / unblock, log out of all devices.
+  - Trips, bookings and trip requests: filter, cancel inappropriate trips, cancel bookings (seats released, both parties notified), close requests.
+  - Vehicles and ratings: list, delete fake vehicles and abusive ratings (averages recalculated).
+  - Reports: review and resolve.
+  - **Activity log** of every staff action (who, what, when, IP).
+- **Android app:** the same Vue app packaged with Capacitor as an APK, with push notifications, hardware back button and a configurable server address.
 - **Frontend:**
   - A separate Vue 3 SPA, in Arabic and RTL, mobile first with a bottom tab bar.
   - English is included and can be switched from the profile page.
@@ -99,7 +112,7 @@ Run these in separate terminals as well:
 
 ```bash
 php artisan queue:work               # notifications + trip-request matching (QUEUE_CONNECTION=database)
-php artisan schedule:work            # trip reminders (every 15 min) + request expiry (daily)
+php artisan schedule:work            # reminders (15 min), auto-complete departed trips (hourly), request expiry (daily)
 ```
 
 ### Environment configuration
@@ -133,18 +146,73 @@ npm run build               # static files in frontend/dist
 
 Serve `frontend/dist` from the same domain as Laravel. Route `/api` to Laravel and send every other path to `index.html`. If the SPA is on another domain, set `VITE_API_URL=https://api.example.com/api` and configure CORS.
 
+## Android app (APK)
+
+The SPA is packaged as a native Android app with [Capacitor 8](https://capacitorjs.com) (`frontend/android`).
+
+**Requirements:** JDK 21+, Android SDK (platform 36, installed with Android Studio).
+
+```bash
+# 1) Backend reachable from the phone (same Wi-Fi):
+php artisan serve --host=0.0.0.0 --port=8000
+
+# 2) frontend/.env.android: VITE_API_URL=http://<your PC IP>:8000/api
+cd frontend
+npm run build:android        # vite build --mode android + cap sync android
+npm run android:apk          # gradlew assembleDebug
+# APK: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+npm run android:open         # or open the project in Android Studio
+```
+
+- The server address can also be changed **inside the app** (login screen → "الخادم"), so one APK works with a dev PC or production.
+- Set `APP_URL` to the same address (e.g. `http://192.168.1.10:8000`) so profile photos load on the phone.
+- `JAVA_HOME` must point to JDK 21+; `frontend/android/local.properties` holds `sdk.dir`.
+- **Release build:** create a keystore, configure `signingConfigs` in `android/app/build.gradle`, then `npm run android:release`.
+
+### Push notifications (Firebase)
+
+Push is optional and disabled until configured:
+
+1. Create a Firebase project and add an Android app with the package name `com.mishwar.app`.
+2. Download `google-services.json` to `frontend/android/app/`, then set `VITE_PUSH_ENABLED=true` in `frontend/.env.android` and rebuild the APK.
+3. In Firebase → Project settings → Service accounts, generate a private key and save it as `storage/app/firebase-credentials.json` (or set `FCM_CREDENTIALS=/path/to/file.json`).
+
+When a user logs in on the app, the device token is registered with `POST /api/devices`. Every notification is then also pushed (unless the user turned push off), tapping it opens the related page, and dead tokens are removed automatically. Without Firebase everything else works; the badge is refreshed by polling.
+
 ## Test credentials
 
 All seeded accounts use the password **`password`**.
 
 | Role | Email | Mobile | Notes |
 |---|---|---|---|
-| Admin | `admin@mishwar.test` | `01000000000` | Opens `/admin` |
+| Super admin | `admin@mishwar.test` | `01000000000` | Opens `/admin` with every permission |
+| Moderator | `moderator@mishwar.test` | `01000000004` | Staff role: reports, trips, bookings, requests, ratings, block users |
+| Support | `support@mishwar.test` | `01000000005` | Staff role: read-only sections, edit user details, send announcements |
 | Driver (demo) | `driver@mishwar.test` | `01000000001` | Has a car and a microbus. Owns the daily Mit Khaqan → Shebin trip with a return trip, a draft, a cancelled trip and completed trips. |
 | Passenger (demo) | `passenger@mishwar.test` | `01000000002` | Has an upcoming booking, completed bookings (one still unrated), trip requests and notifications. |
 | Blocked | `blocked@mishwar.test` | `01000000003` | Login is refused with `account_blocked`. |
 
 The seeders also create 12 random community members, 9 vehicles, about 40 trips (including 9 return trips), about 55 bookings, ratings, 12 trip requests and 5 reports.
+
+## Roles and permissions
+
+Community members have **no role** (`users.role_id = null`). A user with any role is a staff member and can open the admin panel, where each section and action requires a permission:
+
+| Group | Permissions |
+|---|---|
+| Dashboard | `dashboard.view` |
+| Users | `users.view`, `users.update`, `users.block` (block, unblock, log out of all devices) |
+| Roles | `roles.manage` (create, edit and delete roles; assign roles to users) |
+| Trips / bookings / requests | `trips.view`, `trips.manage`, `bookings.view`, `bookings.manage`, `trip_requests.view`, `trip_requests.manage` |
+| Vehicles / ratings | `vehicles.view`, `vehicles.manage`, `ratings.view`, `ratings.manage` |
+| Reports | `reports.view`, `reports.manage` |
+| Communication / audit | `notifications.send`, `activity.view` |
+
+- Permissions are the `App\Enums\Permission` enum. Each one is registered as a Gate ability, so routes use `->middleware('can:users.block')`, and policies add the finer rules.
+- Roles live in the `roles` table (permissions stored as JSON). The `super-admin` role is a **system role**: it implicitly has every permission and cannot be edited or deleted.
+- Safety rules: nobody can moderate themselves; super admin accounts cannot be blocked or edited; only a super admin can change other staff accounts or grant the super admin role; a role that is still assigned cannot be deleted. Removing someone's role logs them out.
+- `GET /api/auth/me` returns `user.role` and `user.permissions`; the SPA hides links and buttons accordingly, and the API enforces them anyway.
+- Every staff action is written to `activity_logs` (`App\Services\ActivityLogger`).
 
 ## Running tests
 
@@ -175,6 +243,8 @@ npm test            # Vitest + Vue Test Utils + happy-dom — 34 tests
   - the guest → login redirect with `redirect` back after login
   - server validation errors shown next to the field
   - the guest-only and admin-only guards
+
+**Screenshots:** with both dev servers running and the seeded database, `node scripts/screenshots.mjs <outDir>` (in `frontend/`) uses Playwright (Chromium) to capture every page at mobile (390 px) and desktop (1280 px) width. It also reports console errors and horizontal overflow. Run `npx playwright install chromium` once first.
 
 | Area | File |
 |---|---|
@@ -216,7 +286,7 @@ HTTP request
 - **Events:**
   - `TripPublished` → `MatchTripRequests` (queued)
   - `BookingCreated`, `BookingStatusChanged` and `TripCancelled` → notification listeners
-- **Jobs:** `SendTripReminders` (every 15 minutes) and `ExpireTripRequests` (daily), scheduled in `routes/console.php`.
+- **Jobs:** `SendTripReminders` (every 15 minutes), `CompleteDepartedTrips` (hourly) and `ExpireTripRequests` (daily), scheduled in `routes/console.php`.
 - **Notifications:**
   - Everything extends `AppNotification`, which picks the channels.
   - Adding push or WhatsApp later means adding a channel and a `toX()` method in one place.
@@ -305,9 +375,10 @@ To replace the matcher, bind a subclass in `AppServiceProvider`.
 12. Passengers and owners can cancel a booking until the trip is started.
 13. Starting a trip is allowed from 2 hours before departure and rejects any pending bookings. Completing a trip turns confirmed bookings into `COMPLETED`.
 14. Ratings are only allowed on `COMPLETED` bookings and only by the two parties. Each party rates the other at most once per booking (enforced by a unique index), and nobody can rate themselves.
-15. Blocked users are rejected at login. All their tokens are revoked, and the `active` middleware rejects every other request with `403 account_blocked`.
-16. Trip requests stay `ACTIVE` until the user cancels them (`CANCELLED`), until they book a trip the request was matched with (`FULFILLED`), or until the day after `requested_date`, when the daily job marks them `EXPIRED`. Matching never creates a booking.
-17. Contact details are private. A trip owner's phone is visible only to their confirmed passengers, and a passenger's phone only to the owner of a trip they are confirmed on.
+15. Blocked users are rejected at login. All their tokens are revoked, and the `active` middleware rejects every other request with `403 account_blocked`. Blocking also cancels their upcoming trips (passengers are notified) and their active bookings (seats go back to the trip and the owner is notified). Completed history is kept.
+16. Trips still open 6 hours after departure are **completed automatically** (hourly job): confirmed bookings become `COMPLETED` and can be rated, and unanswered pending bookings are rejected.
+17. Trip requests stay `ACTIVE` until the user cancels them (`CANCELLED`), until they book a trip the request was matched with (`FULFILLED`), or until the day after `requested_date`, when the daily job marks them `EXPIRED`. Matching never creates a booking.
+18. Contact details are private. A trip owner's phone is visible only to their confirmed passengers, and a passenger's phone only to the owner of a trip they are confirmed on.
 
 ## Authentication
 
@@ -322,10 +393,13 @@ Authentication uses Sanctum personal access tokens (`Authorization: Bearer <toke
 | Password reset | 3 per minute |
 | Trip creation | 30 per hour |
 | Booking | 10 per minute |
+| Trip requests | 20 per hour |
 | Reports | 10 per hour |
 | Everything else | 120 per minute |
 
 ## API documentation
+
+A ready-made **Postman collection** with all 60 requests and example Arabic bodies is in [`mishwar.postman_collection.json`](mishwar.postman_collection.json). Import it, run **Auth / Login (driver)** and the token is saved automatically. Ids created by requests (vehicle, trip, booking, request) are saved too.
 
 All endpoints are prefixed with `/api`. 🔒 = requires a token. 👑 = admin only.
 
@@ -381,27 +455,48 @@ All endpoints are prefixed with `/api`. 🔒 = requires a token. 👑 = admin on
 | GET / POST | `/trip-requests` | `origin, destination, requested_date, preferred_time_from?, preferred_time_to?, passengers_count, notes?`. POST also returns `matching_trips`. |
 | GET / PUT / DELETE | `/trip-requests/{id}` | GET includes current `matching_trips`. DELETE sets the status to `cancelled`. |
 | GET | `/notifications?unread=1` | `meta.unread_count` |
+| GET | `/notifications/unread-count` | Cheap badge polling |
 | PATCH | `/notifications/{id}/read` · `/notifications/read-all` | |
+| DELETE | `/notifications/{id}` · `/notifications/read` | Delete one · delete all read notifications |
+| PUT | `/profile/notification-settings` | `email?: bool, push?: bool` |
+| POST / DELETE | `/devices` | `token, platform?` — FCM token of the Android app (DELETE on logout) |
 | GET / POST | `/reports` | POST takes `reason, description?` plus at least one of `reported_user_id`, `trip_id` or `booking_id`. The reported user is derived from the trip or booking when not given. |
 
 ### Admin 🔒👑
-| Method | Path | Notes |
+Every admin route requires a staff role (`can:access-admin`) plus the permission shown.
+
+| Method | Path | Permission · notes |
 |---|---|---|
-| GET | `/admin/dashboard` | Users, trips, bookings, requests and reports counts |
-| GET | `/admin/users?search=&status=&role=` | |
-| PATCH | `/admin/users/{id}/block` · `/unblock` | Can't target admins or yourself |
-| GET | `/admin/trips?search=&status=&date=` | |
-| PATCH | `/admin/trips/{id}/cancel` | `reason?`. Notifies the owner and passengers. |
-| GET | `/admin/bookings?status=&search=&trip_id=` | |
-| GET | `/admin/trip-requests?status=&search=` | |
-| GET | `/admin/reports?status=&reason=` · `/admin/reports/{id}` | |
-| PATCH | `/admin/reports/{id}` | `status (pending, under_review, resolved, dismissed), admin_notes?` |
+| GET | `/admin/dashboard` | `dashboard.view` |
+| GET | `/admin/users?search=&status=&role=member\|staff\|{role id}` | `users.view` |
+| GET | `/admin/users/{id}` | `users.view` · user, vehicles and counters |
+| PUT | `/admin/users/{id}` | `users.update` · `name?, phone?, email?, email_verified?` |
+| PATCH | `/admin/users/{id}/block` · `/unblock` | `users.block` |
+| DELETE | `/admin/users/{id}/sessions` | `users.block` · log out of every device |
+| PATCH | `/admin/users/{id}/role` | `roles.manage` · `role_id` (null = regular user) |
+| GET | `/admin/permissions` | `roles.manage` · grouped, translated |
+| GET / POST | `/admin/roles` | `roles.manage` · `display_name, description?, permissions[]` |
+| PUT / DELETE | `/admin/roles/{id}` | `roles.manage` · system roles and roles in use are protected (409) |
+| GET | `/admin/trips?search=&status=&date=` | `trips.view` |
+| PATCH | `/admin/trips/{id}/cancel` | `trips.manage` · `reason?` |
+| GET | `/admin/bookings?status=&search=&trip_id=` | `bookings.view` |
+| PATCH | `/admin/bookings/{id}/cancel` | `bookings.manage` · `reason?`, notifies both parties |
+| GET | `/admin/trip-requests?status=&search=` | `trip_requests.view` |
+| PATCH | `/admin/trip-requests/{id}/cancel` | `trip_requests.manage` |
+| GET | `/admin/vehicles?search=&vehicle_type=&deleted=1` | `vehicles.view` |
+| DELETE | `/admin/vehicles/{id}` | `vehicles.manage` · refused while used by upcoming trips |
+| GET | `/admin/ratings?stars=&search=&with_review=1` | `ratings.view` |
+| DELETE | `/admin/ratings/{id}` | `ratings.manage` · rating average recalculated |
+| GET | `/admin/reports?status=&reason=` · `/admin/reports/{id}` | `reports.view` |
+| PATCH | `/admin/reports/{id}` | `reports.manage` · `status, admin_notes?` |
+| GET / POST | `/admin/announcements` | `notifications.send` · `title, message, link?, audience (all, drivers, staff, selected), user_ids[]?, send_email?` |
+| GET | `/admin/activity?action=user.&causer_id=` | `activity.view` |
 
 ## Project structure
 
 ```
 app/
-  Enums/                 UserRole, UserStatus, VehicleType, CostType, TripStatus, TripRequestStatus,
+  Enums/                 Permission, AnnouncementAudience, UserStatus, VehicleType, CostType, TripStatus, TripRequestStatus,
                          BookingStatus, ReportStatus, ReportReason
   Events/  Listeners/    TripPublished, TripCancelled, BookingCreated, BookingStatusChanged (+ listeners)
   Exceptions/            BusinessRuleException
@@ -410,7 +505,7 @@ app/
                          Notification, Admin/*
   Http/Middleware/       EnsureUserIsActive, SetLocale
   Http/Requests/  Http/Resources/
-  Jobs/                  SendTripReminders, ExpireTripRequests
+  Jobs/                  SendTripReminders, CompleteDepartedTrips, ExpireTripRequests
   Models/                User, Vehicle, Trip, TripRequest, Booking, Rating, Report
   Notifications/         AppNotification base + 9 notification types
   Policies/              Trip, Booking, Rating, Vehicle, TripRequest, Report, User
@@ -457,7 +552,7 @@ frontend/                Vue 3 SPA
 - **Draft return trips:** a return trip created with a draft outbound trip is also a draft.
 - **Starting a trip:** allowed from 2 hours before departure, and completing is allowed after departure even without starting, because drivers forget to press "start".
 - **Reminders:** sent once per trip, about 3 hours before departure, to the owner and confirmed passengers.
-- **Blocking:** blocking a user doesn't cancel their future trips automatically; the admin can cancel them from the trips page.
+- **Auto-complete:** trips are completed automatically 6 hours after departure if the owner forgot to do it.
 - **Existing project:** it was a task-management API whose modules had already been removed. The base users migration was extended (fresh database). The existing `ApiResponse` helper, response trait and `UserSeeder` file were reused.
 
 ## Known limitations
@@ -465,7 +560,7 @@ frontend/                Vue 3 SPA
 - Places are free text. There are no maps or coordinates, and a village spelled very differently won't match.
 - Search scores at most 300 SQL candidates per query. That's fine for a village-sized community, but larger scale needs scoring in SQL or a search engine.
 - Request matching loads active requests for the trip's date and scores them in PHP (again fine at MVP scale).
-- There is no real-time push. The unread badge is refreshed by polling `/auth/me` every 60 s while the tab is visible, and when the tab regains focus.
+- The web app has no websocket: the unread badge is refreshed by polling `/notifications/unread-count` every 30 s while the tab is visible. The Android app also gets FCM pushes once Firebase is configured.
 - There is no chat between passenger and driver; contact is by phone after confirmation.
 - No payments (by design).
 - Frontend: English exists, but some content (place names, reviews) is user generated.
@@ -475,7 +570,7 @@ frontend/                Vue 3 SPA
 ## Future improvements
 
 - Map picker plus coordinates, and distance-based matching (the `TripMatchingService` is replaceable).
-- Push notifications (FCM) and WhatsApp via new notification channels.
+- WhatsApp / SMS notification channels (add a channel in `AppNotification::via`).
 - In-app chat and a verified phone number (OTP).
 - Recurring trips (a daily commute).
 - Trust signals: ID or driving-licence verification, women-only trips.

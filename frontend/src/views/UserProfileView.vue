@@ -3,7 +3,7 @@ import { onMounted, ref, watch } from 'vue'
 import { profileApi } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import { useToastStore } from '@/stores/toast'
-import { formatNumber, formatShortDate } from '@/utils/format'
+import { formatNumber, formatRating, formatShortDate } from '@/utils/format'
 import UserAvatar from '@/components/UserAvatar.vue'
 import StarRating from '@/components/StarRating.vue'
 import LoadingState from '@/components/LoadingState.vue'
@@ -37,7 +37,7 @@ onMounted(load)
         <h1 class="text-2xl font-extrabold">{{ data.user.name }}</h1>
         <div class="flex items-center gap-2">
           <StarRating :model-value="data.user.rating_average" readonly size="size-5" />
-          <span class="text-sm text-slate-600">{{ data.user.ratings_count ? `${formatNumber(data.user.rating_average)} (${formatNumber(data.user.ratings_count)})` : $t('rating.new') }}</span>
+          <span class="text-sm text-slate-600">{{ data.user.ratings_count ? `${formatRating(data.user.rating_average)} (${formatNumber(data.user.ratings_count)})` : $t('rating.new') }}</span>
         </div>
         <p class="text-sm text-slate-500">
           {{ $t('profile.completedTrips', { n: formatNumber(data.user.completed_trips_as_owner ?? 0) }) }} ·

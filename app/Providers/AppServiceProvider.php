@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Enums\Permission;
 use App\Models\User;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -19,7 +20,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Admin panel entry + one ability per permission (`can:users.block`, `@can`, ...).
         Gate::define('access-admin', fn (User $user) => $user->isAdmin());
+        foreach (Permission::cases() as $permission) {
+            Gate::define($permission->value, fn (User $user) => $user->hasPermission($permission));
+        }
 
         // Password reset emails link to the Vue app, which calls POST /api/auth/reset-password.
         ResetPassword::createUrlUsing(fn (User $user, string $token) => rtrim(config('app.frontend_url'), '/')
@@ -44,7 +49,9 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('password-reset', fn (Request $request) => Limit::perMinute(3)->by($request->ip()));
 
         RateLimiter::for('trips', fn (Request $request) => Limit::perHour(30)->by($byUserOrIp($request)));
+        RateLimiter::for('trip-requests', fn (Request $request) => Limit::perHour(20)->by($byUserOrIp($request)));
         RateLimiter::for('bookings', fn (Request $request) => Limit::perMinute(10)->by($byUserOrIp($request)));
         RateLimiter::for('reports', fn (Request $request) => Limit::perHour(10)->by($byUserOrIp($request)));
+        RateLimiter::for('announcements', fn (Request $request) => Limit::perHour(20)->by($byUserOrIp($request)));
     }
 }

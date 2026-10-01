@@ -2,7 +2,7 @@
 import AppIcon from './AppIcon.vue'
 import StatusBadge from './StatusBadge.vue'
 import UserAvatar from './UserAvatar.vue'
-import { formatDate, formatTime, tripPriceLabel, formatNumber } from '@/utils/format'
+import { formatDate, formatTime, tripPriceLabel, formatNumber, formatRating } from '@/utils/format'
 
 defineProps({
   trip: { type: Object, required: true },
@@ -31,7 +31,7 @@ defineProps({
       <div class="shrink-0 text-end">
         <StatusBadge v-if="showStatus" kind="trip" :status="trip.status" />
         <span
-          v-else-if="trip.match"
+          v-else-if="trip.match && trip.match.score < 100"
           class="inline-block rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-800"
           :title="$t('search.matchScore')"
         >{{ $t('search.match', { score: formatNumber(trip.match.score) }) }}</span>
@@ -53,13 +53,20 @@ defineProps({
       </span>
     </div>
 
-    <div v-if="showOwner && trip.owner" class="mt-3 flex items-center gap-2 border-t border-slate-100 pt-3 text-sm">
+    <div v-if="showOwner && trip.owner" class="mt-3 flex items-center gap-3 border-t border-slate-100 pt-3 text-sm">
       <UserAvatar :user="trip.owner" size="sm" />
-      <span class="font-semibold">{{ trip.owner.name }}</span>
-      <span v-if="trip.owner.ratings_count" class="inline-flex items-center gap-0.5 text-amber-600">
-        <AppIcon name="star" class="size-4 fill-current" /> {{ formatNumber(trip.owner.rating_average) }}
-      </span>
-      <span v-if="trip.vehicle" class="ms-auto truncate text-slate-500">{{ trip.vehicle.model }} · {{ trip.vehicle.color }}</span>
+      <div class="min-w-0 flex-1">
+        <p class="flex items-center gap-2">
+          <span class="truncate font-semibold">{{ trip.owner.name }}</span>
+          <span v-if="trip.owner.ratings_count" class="inline-flex shrink-0 items-center gap-0.5 text-amber-600">
+            <AppIcon name="star" class="size-4 fill-current" /> {{ formatRating(trip.owner.rating_average) }}
+          </span>
+          <span v-else class="shrink-0 text-xs text-slate-400">{{ $t('rating.new') }}</span>
+        </p>
+        <p v-if="trip.vehicle" class="truncate text-xs text-slate-500">
+          <AppIcon name="car" class="inline size-3.5" /> {{ trip.vehicle.model }} · {{ trip.vehicle.color }}
+        </p>
+      </div>
     </div>
   </RouterLink>
 </template>

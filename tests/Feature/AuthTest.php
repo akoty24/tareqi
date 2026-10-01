@@ -34,7 +34,8 @@ class AuthTest extends TestCase
         $response->assertCreated()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.user.email', 'mohamed@example.com')
-            ->assertJsonPath('data.user.role', 'user')
+            ->assertJsonPath('data.user.role', null)
+            ->assertJsonPath('data.user.permissions', [])
             ->assertJsonStructure(['data' => ['token']])
             ->assertJsonMissingPath('data.user.password');
 
@@ -58,7 +59,7 @@ class AuthTest extends TestCase
 
     public function test_registration_cannot_mass_assign_admin_role(): void
     {
-        $this->postJson('/api/auth/register', $this->registrationData(['role' => 'admin', 'status' => 'blocked']))
+        $this->postJson('/api/auth/register', $this->registrationData(['role' => 'admin', 'role_id' => 1, 'status' => 'blocked']))
             ->assertCreated();
 
         $user = User::where('email', 'mohamed@example.com')->first();

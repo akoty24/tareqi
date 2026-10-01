@@ -1,0 +1,37 @@
+<?php
+
+return [
+    'groups' => [
+        'dashboard' => 'لوحة التحكم',
+        'users' => 'المستخدمون',
+        'roles' => 'الأدوار والصلاحيات',
+        'trips' => 'الرحلات',
+        'bookings' => 'الحجوزات',
+        'trip_requests' => 'طلبات الرحلات',
+        'vehicles' => 'السيارات',
+        'ratings' => 'التقييمات',
+        'reports' => 'البلاغات',
+        'notifications' => 'الإشعارات',
+        'activity' => 'سجل النشاط',
+    ],
+
+    'dashboard_view' => 'عرض الإحصائيات',
+    'users_view' => 'عرض المستخدمين وبياناتهم',
+    'users_update' => 'تعديل بيانات المستخدمين',
+    'users_block' => 'إيقاف وتفعيل الحسابات وتسجيل خروجها',
+    'roles_manage' => 'إدارة الأدوار وتعيينها للمستخدمين',
+    'trips_view' => 'عرض كل الرحلات',
+    'trips_manage' => 'إلغاء الرحلات المخالفة',
+    'bookings_view' => 'عرض كل الحجوزات',
+    'bookings_manage' => 'إلغاء الحجوزات',
+    'trip_requests_view' => 'عرض طلبات الرحلات',
+    'trip_requests_manage' => 'إغلاق طلبات الرحلات',
+    'vehicles_view' => 'عرض السيارات',
+    'vehicles_manage' => 'حذف السيارات المخالفة',
+    'ratings_view' => 'عرض التقييمات',
+    'ratings_manage' => 'حذف التقييمات المسيئة',
+    'reports_view' => 'عرض البلاغات',
+    'reports_manage' => 'مراجعة البلاغات وتغيير حالتها',
+    'notifications_send' => 'إرسال إشعارات جماعية',
+    'activity_view' => 'عرض سجل نشاط الإدارة',
+];

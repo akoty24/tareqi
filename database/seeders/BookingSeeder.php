@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Enums\BookingStatus;
 use App\Enums\TripStatus;
-use App\Enums\UserRole;
 use App\Enums\UserStatus;
 use App\Models\Booking;
 use App\Models\Trip;
@@ -22,7 +21,7 @@ class BookingSeeder extends Seeder
     public function run(): void
     {
         $passengers = User::query()
-            ->where('role', UserRole::User)
+            ->members()
             ->where('status', UserStatus::Active)
             ->get();
         $sara = $passengers->firstWhere('email', 'passenger@mishwar.test');

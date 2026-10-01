@@ -194,7 +194,7 @@ async function onSubmit() {
       </section>
 
       <div class="flex gap-3">
-        <button type="submit" class="btn-primary flex-1" :disabled="submitting">{{ isEdit ? $t('common.save') : $t('trip.createBtn') }}</button>
+        <button type="submit" class="btn-primary flex-1" :disabled="submitting">{{ isEdit ? $t('common.save') : fields.publish ? $t('trip.createBtn') : $t('trip.saveDraft') }}</button>
         <button type="button" class="btn-secondary" @click="router.back()">{{ $t('common.cancel') }}</button>
       </div>
     </form>

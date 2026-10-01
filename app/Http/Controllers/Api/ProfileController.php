@@ -47,6 +47,23 @@ class ProfileController extends Controller
         return $this->success(null, __('messages.password_updated'));
     }
 
+    /** Email / push preferences; in-app notifications are always kept. */
+    public function updateNotificationSettings(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'email' => ['sometimes', 'boolean'],
+            'push' => ['sometimes', 'boolean'],
+        ]);
+
+        $user = $request->user();
+        $user->fill(array_filter([
+            'notify_email' => $data['email'] ?? null,
+            'notify_push' => $data['push'] ?? null,
+        ], fn ($value) => $value !== null))->save();
+
+        return $this->updated(new UserResource($user), __('messages.notification_settings_updated'));
+    }
+
     public function updatePhoto(UpdatePhotoRequest $request): JsonResponse
     {
         $user = $request->user();

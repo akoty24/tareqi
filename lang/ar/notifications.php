@@ -37,6 +37,10 @@ return [
         'title' => 'تم إلغاء حجزك',
         'message' => 'ألغى صاحب الرحلة حجزك في رحلة :origin ← :destination يوم :date.',
     ],
+    'booking_cancelled_by_admin' => [
+        'title' => 'ألغت الإدارة حجزاً',
+        'message' => 'قامت إدارة المنصة بإلغاء حجز :passenger (:seats) في رحلة :origin ← :destination يوم :date.',
+    ],
     'trip_cancelled' => [
         'title' => 'تم إلغاء الرحلة',
         'message' => 'تم إلغاء رحلة :origin ← :destination يوم :date الساعة :time. نأسف للإزعاج.',

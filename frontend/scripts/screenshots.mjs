@@ -25,13 +25,16 @@ async function token(login) {
 const driver = await token('driver@mishwar.test')
 const passenger = await token('passenger@mishwar.test')
 const admin = await token('admin@mishwar.test')
+const moderator = await token('moderator@mishwar.test')
 
 // Pick real ids from the seeded data.
 const api = async (t, p) => (await (await fetch(`${BASE}/api${p}`, { headers: { Authorization: `Bearer ${t}`, Accept: 'application/json' } })).json()).data
 const driverTrips = await api(driver, '/trips?mine=1&scope=upcoming')
-const ownTrip = driverTrips.find((t) => t.pending_bookings_count) || driverTrips[0]
+const open = driverTrips.filter((t) => ['published', 'full'].includes(t.status))
+const ownTrip = open.find((t) => t.pending_bookings_count) || open.find((t) => t.booked_seats) || open[0]
 const otherTrip = (await api(passenger, '/trips'))[0]
 const request = (await api(passenger, '/trip-requests'))[0]
+const driverUserId = (await api(driver, '/auth/me')).user.id
 
 const pages = [
   ['guest', null, '/login'],
@@ -53,6 +56,13 @@ const pages = [
   ['admin', admin, '/admin'],
   ['admin', admin, '/admin/users'],
   ['admin', admin, '/admin/reports'],
+  ['admin', admin, `/admin/users/${driverUserId}`],
+  ['admin', admin, '/admin/roles'],
+  ['admin', admin, '/admin/vehicles'],
+  ['admin', admin, '/admin/ratings'],
+  ['admin', admin, '/admin/announcements'],
+  ['admin', admin, '/admin/activity'],
+  ['moderator', moderator, '/admin'],
 ]
 
 const viewports = { mobile: { width: 390, height: 844 }, desktop: { width: 1280, height: 860 } }

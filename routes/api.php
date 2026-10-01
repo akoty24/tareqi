@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookingController;
+use App\Http\Controllers\Api\DeviceController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\RatingController;
@@ -31,6 +32,8 @@ Route::prefix('auth')->group(function () {
 /*
 |--------------------------------------------------------------------------
 | Authenticated endpoints (blocked users are rejected by `active`)
+| Admin routes: `access-admin` = has a staff role, then one permission per
+| route (`can:users.view`); finer rules live in the policies.
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
@@ -46,6 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('profile', [ProfileController::class, 'update']);
         Route::put('profile/password', [ProfileController::class, 'updatePassword']);
         Route::post('profile/photo', [ProfileController::class, 'updatePhoto']);
+        Route::put('profile/notification-settings', [ProfileController::class, 'updateNotificationSettings']);
         Route::get('users/{user}', [UserController::class, 'show'])->whereNumber('user');
 
         // Vehicles
@@ -78,13 +82,22 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('bookings/{booking}/rating', [RatingController::class, 'store']);
 
         // Trip requests
+        Route::post('trip-requests', [TripRequestController::class, 'store'])->middleware('throttle:trip-requests');
         Route::apiResource('trip-requests', TripRequestController::class)
-            ->parameters(['trip-requests' => 'tripRequest']);
+            ->parameters(['trip-requests' => 'tripRequest'])
+            ->except('store');
 
         // Notifications
         Route::get('notifications', [NotificationController::class, 'index']);
+        Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount']);
         Route::patch('notifications/read-all', [NotificationController::class, 'markAllRead']);
+        Route::delete('notifications/read', [NotificationController::class, 'destroyRead']);
         Route::patch('notifications/{notification}/read', [NotificationController::class, 'markRead']);
+        Route::delete('notifications/{notification}', [NotificationController::class, 'destroy']);
+
+        // Mobile push registration
+        Route::post('devices', [DeviceController::class, 'store']);
+        Route::delete('devices', [DeviceController::class, 'destroy']);
 
         // Reports
         Route::get('reports', [ReportController::class, 'index']);
@@ -96,21 +109,50 @@ Route::middleware('auth:sanctum')->group(function () {
         |------------------------------------------------------------------
         */
         Route::prefix('admin')->middleware('can:access-admin')->group(function () {
-            Route::get('dashboard', Admin\DashboardController::class);
+            Route::get('dashboard', Admin\DashboardController::class)->middleware('can:dashboard.view');
 
-            Route::get('users', [Admin\UserController::class, 'index']);
+            // Users & staff roles
+            Route::get('users', [Admin\UserController::class, 'index'])->middleware('can:users.view');
+            Route::get('users/{user}', [Admin\UserController::class, 'show'])->middleware('can:users.view');
+            Route::put('users/{user}', [Admin\UserController::class, 'update']);
             Route::patch('users/{user}/block', [Admin\UserController::class, 'block']);
             Route::patch('users/{user}/unblock', [Admin\UserController::class, 'unblock']);
+            Route::patch('users/{user}/role', [Admin\UserController::class, 'assignRole']);
+            Route::delete('users/{user}/sessions', [Admin\UserController::class, 'revokeSessions']);
 
-            Route::get('trips', [Admin\TripController::class, 'index']);
+            Route::middleware('can:roles.manage')->group(function () {
+                Route::get('permissions', [Admin\RoleController::class, 'permissions']);
+                Route::apiResource('roles', Admin\RoleController::class)->except('show');
+            });
+
+            // Trips, bookings, requests
+            Route::get('trips', [Admin\TripController::class, 'index'])->middleware('can:trips.view');
             Route::patch('trips/{trip}/cancel', [Admin\TripController::class, 'cancel']);
 
-            Route::get('bookings', [Admin\BookingController::class, 'index']);
-            Route::get('trip-requests', [Admin\TripRequestController::class, 'index']);
+            Route::get('bookings', [Admin\BookingController::class, 'index'])->middleware('can:bookings.view');
+            Route::patch('bookings/{booking}/cancel', [Admin\BookingController::class, 'cancel']);
 
+            Route::get('trip-requests', [Admin\TripRequestController::class, 'index'])->middleware('can:trip_requests.view');
+            Route::patch('trip-requests/{tripRequest}/cancel', [Admin\TripRequestController::class, 'cancel']);
+
+            // Vehicles & ratings
+            Route::get('vehicles', [Admin\VehicleController::class, 'index'])->middleware('can:vehicles.view');
+            Route::delete('vehicles/{vehicle}', [Admin\VehicleController::class, 'destroy']);
+
+            Route::get('ratings', [Admin\RatingController::class, 'index'])->middleware('can:ratings.view');
+            Route::delete('ratings/{rating}', [Admin\RatingController::class, 'destroy'])->middleware('can:ratings.manage');
+
+            // Reports
             Route::get('reports', [Admin\ReportController::class, 'index']);
             Route::get('reports/{report}', [Admin\ReportController::class, 'show']);
             Route::patch('reports/{report}', [Admin\ReportController::class, 'update']);
+
+            // Broadcast notifications & audit log
+            Route::middleware('can:notifications.send')->group(function () {
+                Route::get('announcements', [Admin\AnnouncementController::class, 'index']);
+                Route::post('announcements', [Admin\AnnouncementController::class, 'store'])->middleware('throttle:announcements');
+            });
+            Route::get('activity', [Admin\ActivityLogController::class, 'index'])->middleware('can:activity.view');
         });
     });
 });

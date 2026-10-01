@@ -37,6 +37,10 @@ return [
         'title' => 'Your booking was cancelled',
         'message' => 'The owner cancelled your booking on :origin → :destination on :date.',
     ],
+    'booking_cancelled_by_admin' => [
+        'title' => 'A booking was cancelled by the platform',
+        'message' => 'The platform team cancelled the booking of :passenger (:seats) on :origin → :destination on :date.',
+    ],
     'trip_cancelled' => [
         'title' => 'Trip cancelled',
         'message' => 'The trip :origin → :destination on :date at :time was cancelled.',

@@ -5,6 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import AppLogo from '@/components/AppLogo.vue'
 import AppIcon from '@/components/AppIcon.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
+import { registerPush } from '@/native'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -26,18 +27,20 @@ const secondary = [
 
 const unread = computed(() => auth.unreadNotifications)
 
-// Keep the unread badge fresh without websockets: poll /auth/me while the tab
-// is visible, and refresh right away when the user comes back to the tab.
-const POLL_MS = 60_000
+// Keep the unread badge fresh without websockets: poll the (cheap) unread
+// counter while the tab is visible, and right away when the user comes back.
+// In the Android app, FCM pushes also trigger a refresh.
+const POLL_MS = 30_000
 let timer = null
 function refreshUnread() {
   if (document.visibilityState === 'visible' && auth.isAuthenticated) {
-    auth.refresh().catch(() => {})
+    auth.refreshUnread().catch(() => {})
   }
 }
 onMounted(() => {
   timer = setInterval(refreshUnread, POLL_MS)
   window.addEventListener('focus', refreshUnread)
+  registerPush(router, { onReceived: refreshUnread }).catch(() => {})
 })
 onUnmounted(() => {
   clearInterval(timer)
@@ -52,12 +55,12 @@ async function logout() {
 </script>
 
 <template>
-  <div class="min-h-screen pb-20 md:pb-0">
+  <div class="min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
     <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:start-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:p-2">
       {{ $t('nav.skipToContent') }}
     </a>
 
-    <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <header class="safe-top sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div class="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
         <RouterLink :to="{ name: 'home' }" class="shrink-0"><AppLogo /></RouterLink>
 
@@ -142,7 +145,7 @@ async function logout() {
 
     <!-- Mobile bottom navigation -->
     <nav
-      class="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-slate-200 bg-white md:hidden"
+      class="safe-bottom fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-slate-200 bg-white md:hidden"
       :aria-label="$t('nav.main')"
     >
       <RouterLink

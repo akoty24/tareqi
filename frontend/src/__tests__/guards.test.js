@@ -8,7 +8,7 @@ import { bodyText, mountApp } from './setup'
 
 vi.mock('@/api', async () => {
   const { apiMock, admin } = await import('./fixtures')
-  return apiMock({ ...admin, role: 'user', name: 'سارة إبراهيم' })
+  return apiMock({ ...admin, role: null, permissions: [], name: 'سارة إبراهيم' })
 })
 
 let app

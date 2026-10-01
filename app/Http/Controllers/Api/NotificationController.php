@@ -24,6 +24,12 @@ class NotificationController extends Controller
         );
     }
 
+    /** Cheap endpoint for the badge (polled by the web and mobile apps). */
+    public function unreadCount(Request $request): JsonResponse
+    {
+        return $this->success(['unread_count' => $request->user()->unreadNotifications()->count()], __('messages.ok'));
+    }
+
     public function markRead(Request $request, string $notification): JsonResponse
     {
         // Scoped to the user's own notifications: others' IDs are simply 404.
@@ -38,5 +44,20 @@ class NotificationController extends Controller
         $request->user()->unreadNotifications()->update(['read_at' => now()]);
 
         return $this->success(null, __('messages.notifications_read'));
+    }
+
+    public function destroy(Request $request, string $notification): JsonResponse
+    {
+        $request->user()->notifications()->findOrFail($notification)->delete();
+
+        return $this->deleted(__('messages.notification_deleted'));
+    }
+
+    /** Clear the notification center: read notifications only, unread ones are kept. */
+    public function destroyRead(Request $request): JsonResponse
+    {
+        $request->user()->readNotifications()->delete();
+
+        return $this->deleted(__('messages.notifications_cleared'));
     }
 }
